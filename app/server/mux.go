@@ -11,4 +11,5 @@ func NewMux() *http.ServeMux {
 
 func RegisterWebhook(mux *http.ServeMux, webhook handlers.WebhookHandler) {
 	mux.HandleFunc("/tgwebhook", webhook.Pipe)
+	mux.HandleFunc("/helloworld", webhook.HelloWorld)
 }

@@ -14,7 +14,7 @@ type Server struct {
 }
 
 func NewServer(cfg types.Config, mux *http.ServeMux) *Server {
-	return &Server{server: http.Server{Addr: "localhost:8080", Handler: mux}}
+	return &Server{server: http.Server{Addr: cfg.Addr, Handler: mux}}
 }
 
 func RegisterServer(lc fx.Lifecycle, server *Server) {
