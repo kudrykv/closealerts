@@ -27,7 +27,7 @@ func NewTelegram(config types.Config) (Telegram, error) {
 func RegisterTelegram(lc fx.Lifecycle, config types.Config, bot Telegram) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			if err := bot.SetupWebhookEndpoint(config.WHEndpoint); err != nil {
+			if err := bot.SetupWebhookEndpoint(config.WHEndpoint, config.Cert); err != nil {
 				return fmt.Errorf("setup webhook endpoint: %w", err)
 			}
 
@@ -36,8 +36,8 @@ func RegisterTelegram(lc fx.Lifecycle, config types.Config, bot Telegram) {
 	})
 }
 
-func (r Telegram) SetupWebhookEndpoint(pattern string) error {
-	wh, err := tgbotapi.NewWebhook(pattern)
+func (r Telegram) SetupWebhookEndpoint(pattern string, cert string) error {
+	wh, err := tgbotapi.NewWebhookWithCert(pattern, tgbotapi.FilePath(cert))
 	if err != nil {
 		return fmt.Errorf("new webhook: %w", err)
 	}
