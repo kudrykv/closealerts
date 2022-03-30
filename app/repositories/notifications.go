@@ -57,6 +57,56 @@ func (n Notification) Stop(ctx context.Context, id int64, area string) error {
 	return nil
 }
 
+func (n Notification) Eligible(ctx context.Context, alerts []types2.Alert) ([]types2.Notification, error) {
+	if len(alerts) == 0 {
+		return nil, nil
+	}
+
+	areas := make([]string, 0, len(alerts))
+	for _, alert := range alerts {
+		areas = append(areas, alert.ID)
+	}
+
+	var notif []types2.Notification
+
+	err := n.db.DB().WithContext(ctx).Where("area in (?) and notified = false", areas).Find(&notif).Error
+	if err != nil {
+		return nil, fmt.Errorf("eligible: %w", err)
+	}
+
+	return notif, nil
+}
+
+func (n Notification) Notified(ctx context.Context, eligible []types2.Notification) error {
+	if len(eligible) == 0 {
+		return nil
+	}
+
+	for i := range eligible {
+		eligible[i].Notified = true
+	}
+
+	if err := n.db.DB().WithContext(ctx).Updates(&eligible).Error; err != nil {
+		return fmt.Errorf("mark as notified: %w", err)
+	}
+
+	return nil
+}
+
+func (n Notification) Unmark(ctx context.Context, alerts []types2.Alert) error {
+	areas := make([]string, 0, len(alerts))
+	for _, alert := range alerts {
+		areas = append(areas, alert.ID)
+	}
+
+	err := n.db.DB().WithContext(ctx).Where("area not in (?)", areas).UpdateColumn("notified", false).Error
+	if err != nil {
+		return fmt.Errorf("unmark: %w", err)
+	}
+
+	return nil
+}
+
 func NewNotification(log *zap.SugaredLogger, db clients.DB) Notification {
 	return Notification{log: log, db: db}
 }

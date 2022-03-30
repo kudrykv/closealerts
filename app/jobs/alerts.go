@@ -10,19 +10,26 @@ import (
 )
 
 type Alerts struct {
-	tick     time.Duration
-	done     chan struct{}
-	alertSvc services.Alerts
-	log      *zap.SugaredLogger
+	tick         time.Duration
+	done         chan struct{}
+	alertSvc     services.Alerts
+	log          *zap.SugaredLogger
+	notification services.Notification
 }
 
-func NewAlerts(log *zap.SugaredLogger, cfg types.Config, alertSvc services.Alerts) Alerts {
+func NewAlerts(
+	log *zap.SugaredLogger,
+	cfg types.Config,
+	alertSvc services.Alerts,
+	notification services.Notification,
+) Alerts {
 	return Alerts{
 		tick: cfg.TickInterval,
 		done: make(chan struct{}),
 		log:  log,
 
-		alertSvc: alertSvc,
+		alertSvc:     alertSvc,
+		notification: notification,
 	}
 }
 
@@ -47,6 +54,14 @@ func (r Alerts) Run(ctx context.Context) error {
 
 				if err := r.alertSvc.ReplaceAlerts(ctx, alerts); err != nil {
 					r.log.Errorw("replace alerts", "err", err)
+
+					break
+				}
+
+				if err := r.notification.Notify(ctx, alerts); err != nil {
+					r.log.Errorw("notify", "err", err)
+
+					break
 				}
 			}
 
