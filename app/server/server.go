@@ -7,17 +7,20 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 type Server struct {
 	server http.Server
 }
 
-func NewServer(cfg types.Config, mux *http.ServeMux) *Server {
+func NewServer(log *zap.SugaredLogger, cfg types.Config, mux *http.ServeMux) *Server {
+	log.Infow("preparing web server", "addr", cfg.Addr)
+
 	return &Server{server: http.Server{Addr: cfg.Addr, Handler: mux}}
 }
 
-func RegisterServer(lc fx.Lifecycle, server *Server) {
+func RegisterServer(lc fx.Lifecycle, log *zap.SugaredLogger, server *Server) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() { _ = server.server.ListenAndServe() }()
