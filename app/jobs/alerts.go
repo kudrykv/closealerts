@@ -38,7 +38,7 @@ func (r Alerts) Run(ctx context.Context) error {
 				return
 
 			case <-ticker.C:
-				alerts, err := r.alertSvc.GetActive(ctx)
+				alerts, err := r.alertSvc.GetActiveFromRemote(ctx)
 				if err != nil {
 					r.log.Errorw("get active alerts", "err", err)
 

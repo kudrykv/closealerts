@@ -21,7 +21,7 @@ func NewAlerts(log *zap.SugaredLogger, alerts repositories.Alerts) Alerts {
 	return Alerts{log: log, alerts: alerts}
 }
 
-func (r Alerts) GetActive(ctx context.Context) ([]types2.Alert, error) {
+func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error) {
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, "https://war-api.ukrzen.in.ua/alerts/api/v2/alerts/active.json", nil,
 	)
