@@ -25,7 +25,7 @@ func (n Notification) Track(ctx context.Context, chatID int64, area string) erro
 func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notification, error) {
 	var out []types2.Notification
 
-	if err := n.db.DB().WithContext(ctx).Where("chat_id = ?", id).Select(&out).Error; err != nil {
+	if err := n.db.DB().WithContext(ctx).Where("chat_id = ?", id).Find(&out).Error; err != nil {
 		return nil, fmt.Errorf("tracking %d: %w", id, err)
 	}
 
