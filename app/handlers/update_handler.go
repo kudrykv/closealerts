@@ -59,6 +59,8 @@ func (h UpdateHandler) Handle(ctx context.Context, update types.Update) {
 
 			return
 		}
+
+		return
 	}
 
 	if msg.Text == "шопачьом" {
