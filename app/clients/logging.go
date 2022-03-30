@@ -9,7 +9,6 @@ import (
 func NewLogger() (*zap.Logger, error) {
 	logger, err := zap.NewDevelopment(
 		zap.AddStacktrace(zap.DPanicLevel),
-		zap.IncreaseLevel(zap.InfoLevel),
 		zap.WithCaller(false),
 	)
 	if err != nil {
