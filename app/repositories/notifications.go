@@ -48,6 +48,15 @@ func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notifica
 	return out, nil
 }
 
+func (n Notification) Stop(ctx context.Context, id int64, area string) error {
+	err := n.db.DB().WithContext(ctx).Where("chat_id = ? and area = ?", id, area).Delete(&types2.Notification{}).Error
+	if err != nil {
+		return fmt.Errorf("delete %d %s: %w", id, area, err)
+	}
+
+	return nil
+}
+
 func NewNotification(log *zap.SugaredLogger, db clients.DB) Notification {
 	return Notification{log: log, db: db}
 }

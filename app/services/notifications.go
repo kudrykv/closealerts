@@ -31,6 +31,14 @@ func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notifica
 	return list, nil
 }
 
+func (n Notification) Stop(ctx context.Context, id int64, area string) error {
+	if err := n.notification.Stop(ctx, id, area); err != nil {
+		return fmt.Errorf("stop: %w", err)
+	}
+
+	return nil
+}
+
 func NewNotification(log *zap.SugaredLogger, notification repositories.Notification) Notification {
 	return Notification{log: log, notification: notification}
 }

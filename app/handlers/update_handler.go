@@ -47,6 +47,8 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		return
 	}
 
+	args := strings.TrimSpace(msg.CommandArguments())
+
 	switch msg.Command() {
 	case "tracking":
 		list, err := r.notification.Tracking(ctx, chatID)
@@ -71,7 +73,13 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		r.bot.MaybeSendText(ctx, chatID, strings.Join(areas, ", "))
 
 	case "track":
-		if err := r.notification.Track(ctx, chatID, msg.CommandArguments()); err != nil {
+		if len(args) == 0 {
+			r.bot.MaybeSendText(ctx, chatID, "вкажи що трекати")
+
+			return
+		}
+
+		if err := r.notification.Track(ctx, chatID, args); err != nil {
 			r.log.Errorw("notification track", "err", err)
 			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
 
@@ -79,6 +87,22 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		}
 
 		r.bot.MaybeSendText(ctx, chatID, "буду пильнувати за "+msg.CommandArguments())
+
+	case "stop":
+		if len(args) == 0 {
+			r.bot.MaybeSendText(ctx, chatID, "вкажи від чого відписатись")
+
+			return
+		}
+
+		if err := r.notification.Stop(ctx, chatID, msg.CommandArguments()); err != nil {
+			r.log.Errorw("notification track", "err", err)
+			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
+
+			return
+		}
+
+		r.bot.MaybeSendText(ctx, chatID, "відписуюсь від "+args)
 
 	default:
 		r.bot.MaybeSendText(ctx, chatID, "Невідома для мене дія")
