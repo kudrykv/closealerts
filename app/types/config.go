@@ -34,7 +34,7 @@ func NewConfig() (Config, error) {
 		Addr:           addr,
 		TelegramBotAPI: os.Getenv("TELEGRAM_BOT_API"),
 		WHEndpoint:     os.Getenv("WEBHOOK_ENDPOINT"),
-		Updates:        make(chan Update, 1),
+		Updates:        make(chan Update, 1000),
 		Cert:           os.Getenv("SERVER_CERT"),
 		Key:            os.Getenv("SERVER_KEY"),
 	}, nil
