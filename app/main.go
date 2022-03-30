@@ -56,6 +56,7 @@ func main() {
 func migrate(db clients.DB) error {
 	err := db.AutoMigrate(
 		&types2.Alert{},
+		&types2.Notification{},
 	)
 	if err != nil {
 		return fmt.Errorf("db auto migrate trend: %w", err)
