@@ -12,13 +12,24 @@ import (
 )
 
 type UpdateHandler struct {
-	bot    clients.Telegram
-	alerts services.Alerts
-	log    *zap.SugaredLogger
+	bot          clients.Telegram
+	alerts       services.Alerts
+	log          *zap.SugaredLogger
+	notification services.Notification
 }
 
-func NewUpdate(log *zap.SugaredLogger, bot clients.Telegram, alerts services.Alerts) UpdateHandler {
-	return UpdateHandler{log: log, bot: bot, alerts: alerts}
+func NewUpdate(
+	log *zap.SugaredLogger,
+	bot clients.Telegram,
+	alerts services.Alerts,
+	notification services.Notification,
+) UpdateHandler {
+	return UpdateHandler{
+		log:          log,
+		bot:          bot,
+		alerts:       alerts,
+		notification: notification,
+	}
 }
 
 func (h UpdateHandler) Handle(ctx context.Context, update types.Update) {
@@ -27,7 +38,28 @@ func (h UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		return
 	}
 
-	h.log.Infow("got msg", "msg", msg.Text)
+	if !msg.IsCommand() {
+		return
+	}
+
+	switch msg.Command() {
+	case "дивитись":
+		if err := h.notification.Track(ctx, msg.Chat.ID, msg.CommandArguments()); err != nil {
+			h.log.Errorw("notification track", "err", err)
+
+			if _, err := h.bot.Client.Send(tgbotapi.NewMessage(msg.Chat.ID, "в мене щось пішло не так, спробуй ще раз")); err != nil {
+				h.log.Errorw("send new message", "err", err)
+
+				return
+			}
+		}
+
+		if _, err := h.bot.Client.Send(tgbotapi.NewMessage(msg.Chat.ID, "буду пильнувати за "+msg.CommandArguments())); err != nil {
+			h.log.Errorw("send new message", "err", err)
+
+			return
+		}
+	}
 
 	if msg.Text == "шопачьом" {
 		alerts, err := h.alerts.GetActiveFromRemote(ctx)

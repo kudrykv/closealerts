@@ -26,8 +26,10 @@ func main() {
 			clients.NewTelegram,
 
 			repositories.NewAlerts,
+			repositories.NewNotification,
 
 			services.NewAlerts,
+			services.NewNotification,
 
 			jobs.NewAlerts,
 
