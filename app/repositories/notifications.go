@@ -77,16 +77,14 @@ func (n Notification) Eligible(ctx context.Context, alerts []types2.Alert) ([]ty
 	return notif, nil
 }
 
-func (n Notification) Notified(ctx context.Context, eligible []types2.Notification) error {
-	if len(eligible) == 0 {
-		return nil
-	}
+func (n Notification) Notified(ctx context.Context, eligible types2.Notification) error {
+	err := n.db.DB().
+		WithContext(ctx).
+		Where("chat_id = ? and area = ?", eligible.ChatID, eligible.Area).
+		UpdateColumn("notified", true).
+		Error
 
-	for i := range eligible {
-		eligible[i].Notified = true
-	}
-
-	if err := n.db.DB().WithContext(ctx).Updates(&eligible).Error; err != nil {
+	if err != nil {
 		return fmt.Errorf("mark as notified: %w", err)
 	}
 

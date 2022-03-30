@@ -79,14 +79,14 @@ func (n Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 			}()
 
 			n.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога!")
+
+			if err := n.notification.Notified(ctx, notification); err != nil {
+				n.log.Errorw("notified", "err", err)
+			}
 		}(notification)
 	}
 
 	wg.Wait()
-
-	if err := n.notification.Notified(ctx, eligible); err != nil {
-		return fmt.Errorf("mark as notified: %w", err)
-	}
 
 	if err := n.notification.Unmark(ctx, alerts); err != nil {
 		return fmt.Errorf("unmark: %w", err)
