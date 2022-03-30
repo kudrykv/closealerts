@@ -51,6 +51,7 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	case "tracking":
 		list, err := r.notification.Tracking(ctx, chatID)
 		if err != nil {
+			r.log.Errorw("notification track", "err", err)
 			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
 
 			return
@@ -72,7 +73,6 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	case "track":
 		if err := r.notification.Track(ctx, chatID, msg.CommandArguments()); err != nil {
 			r.log.Errorw("notification track", "err", err)
-
 			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
 
 			return
