@@ -22,6 +22,16 @@ func (n Notification) Track(ctx context.Context, chatID int64, area string) erro
 	return nil
 }
 
+func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notification, error) {
+	var out []types2.Notification
+
+	if err := n.db.DB().WithContext(ctx).Where("chat_id = ?", id).Select(&out); err != nil {
+		return nil, fmt.Errorf("tracking %d: %w", id, err)
+	}
+
+	return out, nil
+}
+
 func NewNotification(log *zap.SugaredLogger, db clients.DB) Notification {
 	return Notification{log: log, db: db}
 }

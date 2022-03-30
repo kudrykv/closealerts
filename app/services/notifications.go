@@ -2,6 +2,7 @@ package services
 
 import (
 	"closealerts/app/repositories"
+	types2 "closealerts/app/repositories/types"
 	"context"
 	"fmt"
 
@@ -19,6 +20,15 @@ func (n Notification) Track(ctx context.Context, chatID int64, area string) erro
 	}
 
 	return nil
+}
+
+func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notification, error) {
+	list, err := n.notification.Tracking(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("tracking: %w", err)
+	}
+
+	return list, nil
 }
 
 func NewNotification(log *zap.SugaredLogger, notification repositories.Notification) Notification {

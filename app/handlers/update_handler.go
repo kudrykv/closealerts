@@ -7,7 +7,6 @@ import (
 	"context"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
 
@@ -32,66 +31,56 @@ func NewUpdate(
 	}
 }
 
-func (h UpdateHandler) Handle(ctx context.Context, update types.Update) {
+func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	msg := update.Message
 	if msg == nil {
 		return
 	}
 
-	h.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
+	r.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
+
+	chatID := msg.Chat.ID
 
 	if !msg.IsCommand() {
+		r.bot.MaybeSendText(ctx, chatID, "Невідома для мене дія")
+
 		return
 	}
 
 	switch msg.Command() {
-	case "look":
-		if err := h.notification.Track(ctx, msg.Chat.ID, msg.CommandArguments()); err != nil {
-			h.log.Errorw("notification track", "err", err)
-
-			if _, err := h.bot.Client.Send(tgbotapi.NewMessage(msg.Chat.ID, "в мене щось пішло не так, спробуй ще раз")); err != nil {
-				h.log.Errorw("send new message", "err", err)
-
-				return
-			}
-		}
-
-		if _, err := h.bot.Client.Send(tgbotapi.NewMessage(msg.Chat.ID, "буду пильнувати за "+msg.CommandArguments())); err != nil {
-			h.log.Errorw("send new message", "err", err)
-
-			return
-		}
-
-		return
-	}
-
-	if msg.Text == "шопачьом" {
-		alerts, err := h.alerts.GetActiveFromRemote(ctx)
+	case "tracking":
+		list, err := r.notification.Tracking(ctx, chatID)
 		if err != nil {
-			h.log.Errorw("get active alerts from remote", "err", err)
+			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
 
 			return
 		}
 
-		if len(alerts) == 0 {
-			if _, err := h.bot.Client.Send(tgbotapi.NewMessage(msg.Chat.ID, "всьо норм")); err != nil {
-				h.log.Errorw("send new message", "err", err)
-
-				return
-			}
+		if len(list) == 0 {
+			r.bot.MaybeSendText(ctx, chatID, "ще нічого не трекаєш")
 
 			return
 		}
 
-		areas := make([]string, 0, len(alerts))
-		for _, alert := range alerts {
-			areas = append(areas, alert.ID)
+		areas := make([]string, 0, len(list))
+		for _, notification := range list {
+			areas = append(areas, notification.Area)
 		}
 
-		if _, err := h.bot.Client.Send(tgbotapi.NewMessage(msg.Chat.ID, strings.Join(areas, ", "))); err != nil {
-			h.log.Errorw("send new message", "err", err)
+		r.bot.MaybeSendText(ctx, chatID, strings.Join(areas, ", "))
+
+	case "track":
+		if err := r.notification.Track(ctx, chatID, msg.CommandArguments()); err != nil {
+			r.log.Errorw("notification track", "err", err)
+
+			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
 
 			return
 		}
+
+		r.bot.MaybeSendText(ctx, chatID, "буду пильнувати за "+msg.CommandArguments())
+
+	default:
+		r.bot.MaybeSendText(ctx, chatID, "Невідома для мене дія")
 	}
 }
