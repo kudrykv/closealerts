@@ -42,3 +42,12 @@ func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error 
 
 	return nil
 }
+
+func (r Alerts) GetActive(ctx context.Context) ([]types2.Alert, error) {
+	var list []types2.Alert
+	if err := r.db.DB().WithContext(ctx).Find(&list).Error; err != nil {
+		return nil, fmt.Errorf("get alerts from db: %w", err)
+	}
+
+	return list, nil
+}

@@ -66,6 +66,15 @@ func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error 
 	return nil
 }
 
+func (r Alerts) GetActive(ctx context.Context) ([]types2.Alert, error) {
+	list, err := r.alerts.GetActive(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get active: %w", err)
+	}
+
+	return list, nil
+}
+
 type Alert struct {
 	Type string `json:"t"`
 	Area string `json:"n"`

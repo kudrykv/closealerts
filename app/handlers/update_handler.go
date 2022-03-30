@@ -104,6 +104,28 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 
 		r.bot.MaybeSendText(ctx, chatID, "відписуюсь від "+args)
 
+	case "alerts":
+		alerts, err := r.alerts.GetActive(ctx)
+		if err != nil {
+			r.log.Errorw("notification track", "err", err)
+			r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
+
+			return
+		}
+
+		if len(alerts) == 0 {
+			r.bot.MaybeSendText(ctx, chatID, "все тихо")
+
+			return
+		}
+
+		areas := make([]string, 0, len(alerts))
+		for _, alert := range alerts {
+			areas = append(areas, alert.ID)
+		}
+
+		r.bot.MaybeSendText(ctx, chatID, strings.Join(areas, ", "))
+
 	default:
 		r.bot.MaybeSendText(ctx, chatID, "Невідома для мене дія")
 	}
