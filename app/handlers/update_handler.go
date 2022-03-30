@@ -38,12 +38,14 @@ func (h UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		return
 	}
 
+	h.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
+
 	if !msg.IsCommand() {
 		return
 	}
 
 	switch msg.Command() {
-	case "дивитись":
+	case "look":
 		if err := h.notification.Track(ctx, msg.Chat.ID, msg.CommandArguments()); err != nil {
 			h.log.Errorw("notification track", "err", err)
 
