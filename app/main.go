@@ -4,6 +4,7 @@ import (
 	"closealerts/app/clients"
 	"closealerts/app/handlers"
 	"closealerts/app/jobs"
+	"closealerts/app/repositories"
 	types2 "closealerts/app/repositories/types"
 	"closealerts/app/server"
 	"closealerts/app/services"
@@ -23,6 +24,8 @@ func main() {
 			clients.NewLogger,
 			clients.NewSugaredLogger,
 			clients.NewTelegram,
+
+			repositories.NewAlerts,
 
 			services.NewAlerts,
 

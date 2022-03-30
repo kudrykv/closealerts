@@ -1,7 +1,7 @@
 package services
 
 import (
-	"closealerts/app/clients"
+	"closealerts/app/repositories"
 	types2 "closealerts/app/repositories/types"
 	"context"
 	"encoding/json"
@@ -10,16 +10,15 @@ import (
 	"net/http"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm/clause"
 )
 
 type Alerts struct {
-	db  clients.DB
-	log *zap.SugaredLogger
+	log    *zap.SugaredLogger
+	alerts repositories.Alerts
 }
 
-func NewAlerts(log *zap.SugaredLogger, db clients.DB) Alerts {
-	return Alerts{log: log, db: db}
+func NewAlerts(log *zap.SugaredLogger, alerts repositories.Alerts) Alerts {
+	return Alerts{log: log, alerts: alerts}
 }
 
 func (r Alerts) GetActive(ctx context.Context) ([]types2.Alert, error) {
@@ -60,26 +59,8 @@ func (r Alerts) GetActive(ctx context.Context) ([]types2.Alert, error) {
 }
 
 func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error {
-	if len(alerts) == 0 {
-		return nil
-	}
-
-	cond := clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}},
-		UpdateAll: true,
-	}
-
-	if err := r.db.DB().WithContext(ctx).Clauses(cond).Create(alerts).Error; err != nil {
-		return fmt.Errorf("create: %w", err)
-	}
-
-	ids := make([]string, 0, len(alerts))
-	for _, alert := range alerts {
-		ids = append(ids, alert.ID)
-	}
-
-	if err := r.db.DB().WithContext(ctx).Where("id not in (?)", ids).Delete(&types2.Alert{}).Error; err != nil {
-		return fmt.Errorf("delete rest: %w", err)
+	if err := r.alerts.ReplaceAlerts(ctx, alerts); err != nil {
+		return fmt.Errorf("replace alerts: %w", err)
 	}
 
 	return nil
