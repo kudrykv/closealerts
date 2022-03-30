@@ -13,6 +13,8 @@ type Config struct {
 	TelegramBotAPI string
 	WHEndpoint     string
 	Updates        chan Update
+	Cert           string
+	Key            string
 }
 
 func NewConfig() (Config, error) {
@@ -33,5 +35,7 @@ func NewConfig() (Config, error) {
 		TelegramBotAPI: os.Getenv("TELEGRAM_BOT_API"),
 		WHEndpoint:     os.Getenv("WEBHOOK_ENDPOINT"),
 		Updates:        make(chan Update, 1),
+		Cert:           os.Getenv("SERVER_CERT"),
+		Key:            os.Getenv("SERVER_KEY"),
 	}, nil
 }

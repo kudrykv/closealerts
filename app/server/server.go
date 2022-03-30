@@ -20,10 +20,10 @@ func NewServer(log *zap.SugaredLogger, cfg types.Config, mux *http.ServeMux) *Se
 	return &Server{server: http.Server{Addr: cfg.Addr, Handler: mux}}
 }
 
-func RegisterServer(lc fx.Lifecycle, server *Server) {
+func RegisterServer(lc fx.Lifecycle, config types.Config, server *Server) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			go func() { _ = server.server.ListenAndServe() }()
+			go func() { _ = server.server.ListenAndServeTLS(config.Cert, config.Key) }()
 
 			return nil
 		},
