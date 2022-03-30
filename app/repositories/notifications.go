@@ -80,6 +80,7 @@ func (n Notification) Eligible(ctx context.Context, alerts []types2.Alert) ([]ty
 func (n Notification) Notified(ctx context.Context, eligible types2.Notification) error {
 	err := n.db.DB().
 		WithContext(ctx).
+		Model(&types2.Notification{}).
 		Where("chat_id = ? and area = ?", eligible.ChatID, eligible.Area).
 		UpdateColumn("notified", true).
 		Error
@@ -97,7 +98,12 @@ func (n Notification) Unmark(ctx context.Context, alerts []types2.Alert) error {
 		areas = append(areas, alert.ID)
 	}
 
-	err := n.db.DB().WithContext(ctx).Where("area not in (?)", areas).UpdateColumn("notified", false).Error
+	err := n.db.DB().
+		WithContext(ctx).
+		Model(&types2.Notification{}).
+		Where("area not in (?)", areas).
+		UpdateColumn("notified", false).
+		Error
 	if err != nil {
 		return fmt.Errorf("unmark: %w", err)
 	}
