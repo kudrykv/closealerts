@@ -49,6 +49,8 @@ func (r Alerts) Run(ctx context.Context) error {
 					r.log.Errorw("replace alerts", "err", err)
 				}
 			}
+
+			r.log.Debug("alerts tick")
 		}
 	}()
 
