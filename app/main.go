@@ -27,9 +27,11 @@ func main() {
 
 			repositories.NewAlerts,
 			repositories.NewNotification,
+			repositories.NewChats,
 
 			services.NewAlerts,
 			services.NewNotification,
+			services.NewChats,
 
 			jobs.NewAlerts,
 
@@ -57,6 +59,7 @@ func migrate(db clients.DB) error {
 	err := db.AutoMigrate(
 		&types2.Alert{},
 		&types2.Notification{},
+		&types2.Chat{},
 	)
 	if err != nil {
 		return fmt.Errorf("db auto migrate trend: %w", err)
