@@ -92,37 +92,23 @@ func (n Notification) Notified(ctx context.Context, eligible types2.Notification
 	return nil
 }
 
-func (n Notification) Unmark(ctx context.Context, alerts []types2.Alert) ([]types2.Notification, error) {
+func (n Notification) Unmark(ctx context.Context, alerts []types2.Alert) error {
 	areas := make([]string, 0, len(alerts))
 	for _, alert := range alerts {
 		areas = append(areas, alert.ID)
 	}
 
-	var unmark []types2.Notification
-
-	err := n.db.DB().Transaction(func(tx *gorm.DB) error {
-		if err := n.db.DB().WithContext(ctx).Where("area not in (?)", areas).Find(&unmark).Error; err != nil {
-			return fmt.Errorf("get ones to unmark: %w", err)
-		}
-
-		err := n.db.DB().
-			WithContext(ctx).
-			Model(&types2.Notification{}).
-			Where("area not in (?)", areas).
-			UpdateColumn("notified", false).
-			Error
-		if err != nil {
-			return fmt.Errorf("unmark: %w", err)
-		}
-
-		return nil
-	})
-
+	err := n.db.DB().
+		WithContext(ctx).
+		Model(&types2.Notification{}).
+		Where("area not in (?)", areas).
+		UpdateColumn("notified", false).
+		Error
 	if err != nil {
-		return nil, fmt.Errorf("tx: %w", err)
+		return fmt.Errorf("unmark: %w", err)
 	}
 
-	return unmark, nil
+	return nil
 }
 
 func NewNotification(log *zap.SugaredLogger, db clients.DB) Notification {
