@@ -107,10 +107,6 @@ func (n Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 			}()
 
 			n.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога минула")
-
-			if err := n.notification.Notified(ctx, notification); err != nil {
-				n.log.Errorw("notified", "err", err)
-			}
 		}(notification)
 	}
 

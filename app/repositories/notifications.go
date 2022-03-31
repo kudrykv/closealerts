@@ -118,7 +118,9 @@ func (n Notification) AlertEnded(ctx context.Context, alerts []types2.Alert) ([]
 	}
 
 	var endedFor []types2.Notification
-	if err := n.db.DB().WithContext(ctx).Where("area not in (?) and notified = true").Find(&endedFor).Error; err != nil {
+
+	err := n.db.DB().WithContext(ctx).Where("area not in (?) and notified = true", areas).Find(&endedFor).Error
+	if err != nil {
 		return nil, fmt.Errorf("alert ended: %w", err)
 	}
 
