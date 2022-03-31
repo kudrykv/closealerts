@@ -37,7 +37,7 @@ func (r Notification) Track(ctx context.Context, chatID int64, area string) erro
 	return nil
 }
 
-func (r Notification) Tracking(ctx context.Context, id int64) ([]types2.Notification, error) {
+func (r Notification) Tracking(ctx context.Context, id int64) (types2.Notifications, error) {
 	list, err := r.notification.Tracking(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("tracking: %w", err)

@@ -16,6 +16,7 @@ type UpdateHandler struct {
 	log          *zap.SugaredLogger
 	notification services.Notification
 	chat         services.Chats
+	commander    services.Commander
 }
 
 func NewUpdate(
@@ -24,6 +25,7 @@ func NewUpdate(
 	alerts services.Alerts,
 	notification services.Notification,
 	chat services.Chats,
+	commander services.Commander,
 ) UpdateHandler {
 	return UpdateHandler{
 		log:          log,
@@ -31,6 +33,7 @@ func NewUpdate(
 		alerts:       alerts,
 		chat:         chat,
 		notification: notification,
+		commander:    commander,
 	}
 }
 
@@ -42,8 +45,11 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 
 	r.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
 
-	chatID := msg.Chat.ID
-	text := strings.TrimSpace(msg.Text)
+	var (
+		text     string
+		err      error
+		clearCmd bool
+	)
 
 	// load "user" from db
 	// if not a command:
@@ -52,7 +58,7 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	// else
 	//   store command on the user
 
-	chat, err := r.chat.FirstOrCreate(ctx, chatID)
+	chat, err := r.chat.FirstOrCreate(ctx, msg.Chat.ID)
 	if err != nil {
 		r.log.Errorw("load or create chat", "err", err)
 
@@ -64,136 +70,48 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 
 		switch msg.Command() {
 		case "track":
-			if len(args) > 0 {
-				if err := r.notification.Track(ctx, chatID, args); err != nil {
-					r.log.Errorw("notification track", "err", err)
-					r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-					return
-				}
-
-				r.bot.MaybeSendText(ctx, chatID, "буду пильнувати за "+args)
-
-				return
-			}
-
-			if err := r.chat.SetCommand(ctx, chatID, "track"); err != nil {
-				r.log.Errorw("set command", "err", err)
-				r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-				return
-			}
-
-			r.bot.MaybeSendText(ctx, chatID, "вкажи територію, за якою пильнувати")
+			text, err = r.commander.Track(ctx, chat, args)
 
 		case "tracking":
-			list, err := r.notification.Tracking(ctx, chatID)
-			if err != nil {
-				r.log.Errorw("notification track", "err", err)
-				r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-				return
-			}
-
-			if len(list) == 0 {
-				r.bot.MaybeSendText(ctx, chatID, "ще нічого не трекаєш")
-
-				return
-			}
-
-			areas := make([]string, 0, len(list))
-			for _, notification := range list {
-				areas = append(areas, notification.Area)
-			}
-
-			r.bot.MaybeSendText(ctx, chatID, strings.Join(areas, ", "))
+			text, err = r.commander.Tracking(ctx, chat, args)
 
 		case "stop":
-			if len(args) > 0 {
-				if err := r.notification.Stop(ctx, chatID, args); err != nil {
-					r.log.Errorw("notification track", "err", err)
-					r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-					return
-				}
-
-				r.bot.MaybeSendText(ctx, chatID, "відписуюсь від "+args)
-
-				return
-			}
-
-			if err := r.chat.SetCommand(ctx, chatID, "stop"); err != nil {
-				r.log.Errorw("set command", "err", err)
-				r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-				return
-			}
-
-			r.bot.MaybeSendText(ctx, chatID, "вкажи територію від якої відписатись")
+			text, err = r.commander.Stop(ctx, chat, args)
 
 		case "alerts":
-			alerts, err := r.alerts.GetActive(ctx)
-			if err != nil {
-				r.log.Errorw("notification track", "err", err)
-				r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-				return
-			}
-
-			if len(alerts) == 0 {
-				r.bot.MaybeSendText(ctx, chatID, "все тихо")
-
-				return
-			}
-
-			areas := make([]string, 0, len(alerts))
-			for _, alert := range alerts {
-				areas = append(areas, alert.ID)
-			}
-
-			r.bot.MaybeSendText(ctx, chatID, strings.Join(areas, ", "))
+			text, err = r.commander.Alerts(ctx, chat, args)
 
 		default:
-			r.bot.MaybeSendText(ctx, chatID, "я такої команди не знаю")
+			text = "я такої команди не знаю"
 		}
-
-		return
 	} else {
+		clearCmd = true
+
 		switch chat.Command {
-		case "":
-			r.bot.MaybeSendText(ctx, chatID, "а, шо?")
-
 		case "track":
-			if err := r.notification.Track(ctx, chatID, text); err != nil {
-				r.log.Errorw("notification track", "err", err)
-				r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
-
-				return
-			}
-
-			r.bot.MaybeSendText(ctx, chatID, "буду пильнувати за "+text)
-
-			if err := r.chat.ClearCommand(ctx, chatID); err != nil {
-				r.log.Errorw("clear command", "err", err)
-
-				return
-			}
+			text, err = r.commander.Track(ctx, chat, msg.Text)
 
 		case "stop":
-			if err := r.notification.Stop(ctx, chatID, text); err != nil {
-				r.log.Errorw("notification track", "err", err)
-				r.bot.MaybeSendText(ctx, chatID, "в мене щось пішло не так, спробуй ще раз")
+			text, err = r.commander.Stop(ctx, chat, msg.Text)
 
-				return
-			}
+		default:
+			text = "а, шо?"
+			clearCmd = false
+		}
+	}
 
-			r.bot.MaybeSendText(ctx, chatID, "відписуюсь від "+text)
+	if err != nil {
+		r.log.Errorw("track", "err", err)
+		r.bot.MaybeSendText(ctx, chat.ID, "в мене щось пішло не так, спробуй ще раз")
+	}
 
-			if err := r.chat.ClearCommand(ctx, chatID); err != nil {
-				r.log.Errorw("clear command", "err", err)
+	r.bot.MaybeSendText(ctx, chat.ID, text)
 
-				return
-			}
+	if clearCmd {
+		if err := r.chat.ClearCommand(ctx, chat.ID); err != nil {
+			r.log.Errorw("clear command", "err", err)
+
+			return
 		}
 	}
 }

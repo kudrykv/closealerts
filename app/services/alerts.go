@@ -66,7 +66,7 @@ func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error 
 	return nil
 }
 
-func (r Alerts) GetActive(ctx context.Context) ([]types2.Alert, error) {
+func (r Alerts) GetActive(ctx context.Context) (types2.Alerts, error) {
 	list, err := r.alerts.GetActive(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get active: %w", err)

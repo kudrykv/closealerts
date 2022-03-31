@@ -32,6 +32,7 @@ func main() {
 			services.NewAlerts,
 			services.NewNotification,
 			services.NewChats,
+			services.NewCommander,
 
 			jobs.NewAlerts,
 
