@@ -19,6 +19,10 @@ func NewAlerts(db clients.DB) Alerts {
 
 func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error {
 	if len(alerts) == 0 {
+		if err := r.db.DB().WithContext(ctx).Where("1 = 1").Delete(&types2.Alert{}).Error; err != nil {
+			return fmt.Errorf("clear alerts: %w", err)
+		}
+
 		return nil
 	}
 
