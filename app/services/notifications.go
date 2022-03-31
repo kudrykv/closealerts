@@ -29,16 +29,16 @@ func NewNotification(
 	}
 }
 
-func (n Notification) Track(ctx context.Context, chatID int64, area string) error {
-	if err := n.notification.Track(ctx, chatID, area); err != nil {
+func (r Notification) Track(ctx context.Context, chatID int64, area string) error {
+	if err := r.notification.Track(ctx, chatID, area); err != nil {
 		return fmt.Errorf("track: %w", err)
 	}
 
 	return nil
 }
 
-func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notification, error) {
-	list, err := n.notification.Tracking(ctx, id)
+func (r Notification) Tracking(ctx context.Context, id int64) ([]types2.Notification, error) {
+	list, err := r.notification.Tracking(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("tracking: %w", err)
 	}
@@ -46,75 +46,92 @@ func (n Notification) Tracking(ctx context.Context, id int64) ([]types2.Notifica
 	return list, nil
 }
 
-func (n Notification) Stop(ctx context.Context, id int64, area string) error {
-	if err := n.notification.Stop(ctx, id, area); err != nil {
+func (r Notification) Stop(ctx context.Context, id int64, area string) error {
+	if err := r.notification.Stop(ctx, id, area); err != nil {
 		return fmt.Errorf("stop: %w", err)
 	}
 
 	return nil
 }
 
-func (n Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
+func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 	// 1. select ones who needs to be notified
 	// 2. notify those
 	// 3. mark notified
 	// 4. unmark ones who doesn't match alerts
 
-	eligible, err := n.notification.Eligible(ctx, alerts)
+	eligible, err := r.notification.Eligible(ctx, alerts)
 	if err != nil {
 		return fmt.Errorf("eligible: %w", err)
 	}
 
-	sf := make(chan struct{}, 4)
-	wg := sync.WaitGroup{}
+	alertsWg := r.notifyAboutAlertsAsync(ctx, eligible)
 
-	for _, notification := range eligible {
-		sf <- struct{}{}
-		wg.Add(1)
-
-		go func(notification types2.Notification) {
-			defer func() {
-				<-sf
-				wg.Done()
-			}()
-
-			n.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога!")
-
-			if err := n.notification.Notified(ctx, notification); err != nil {
-				n.log.Errorw("notified", "err", err)
-			}
-		}(notification)
-	}
-
-	wg.Wait()
-
-	endedFor, err := n.notification.AlertEnded(ctx, alerts)
+	endedFor, err := r.notification.AlertEnded(ctx, alerts)
 	if err != nil {
 		return fmt.Errorf("alert ended: %w", err)
 	}
 
-	sf = make(chan struct{}, 4)
-	wg = sync.WaitGroup{}
+	endedAlertsWg := r.notifyAboutEndedAlertsAsync(ctx, endedFor)
 
-	for _, notification := range endedFor {
-		sf <- struct{}{}
-		wg.Add(1)
-
-		go func(notification types2.Notification) {
-			defer func() {
-				<-sf
-				wg.Done()
-			}()
-
-			n.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога минула")
-		}(notification)
-	}
-
-	wg.Wait()
-
-	if err := n.notification.Unmark(ctx, alerts); err != nil {
+	if err := r.notification.Unmark(ctx, alerts); err != nil {
 		return fmt.Errorf("unmark: %w", err)
 	}
 
+	alertsWg.Wait()
+	endedAlertsWg.Wait()
+
 	return nil
+}
+
+func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible []types2.Notification) *sync.WaitGroup {
+	wg := &sync.WaitGroup{}
+
+	go func() {
+		sf := make(chan struct{}, 4)
+
+		for _, notification := range eligible {
+			sf <- struct{}{}
+			wg.Add(1)
+
+			go func(notification types2.Notification) {
+				defer func() {
+					<-sf
+					wg.Done()
+				}()
+
+				r.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога!")
+
+				if err := r.notification.Notified(ctx, notification); err != nil {
+					r.log.Errorw("notified", "err", err)
+				}
+			}(notification)
+		}
+	}()
+
+	return wg
+}
+
+func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor []types2.Notification) *sync.WaitGroup {
+	wg := &sync.WaitGroup{}
+
+	go func() {
+		sf := make(chan struct{}, 4)
+
+		for _, notification := range endedFor {
+			sf <- struct{}{}
+			wg.Add(1)
+
+			go func(notification types2.Notification) {
+				defer func() {
+					<-sf
+					wg.Done()
+				}()
+
+				r.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога минула")
+			}(notification)
+		}
+	}()
+
+	return wg
 }
