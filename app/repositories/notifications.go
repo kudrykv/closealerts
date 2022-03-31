@@ -111,6 +111,20 @@ func (n Notification) Unmark(ctx context.Context, alerts []types2.Alert) error {
 	return nil
 }
 
+func (n Notification) AlertEnded(ctx context.Context, alerts []types2.Alert) ([]types2.Notification, error) {
+	areas := make([]string, 0, len(alerts))
+	for _, alert := range alerts {
+		areas = append(areas, alert.ID)
+	}
+
+	var endedFor []types2.Notification
+	if err := n.db.DB().WithContext(ctx).Where("area not in (?) and notified = true").Find(&endedFor).Error; err != nil {
+		return nil, fmt.Errorf("alert ended: %w", err)
+	}
+
+	return endedFor, nil
+}
+
 func NewNotification(log *zap.SugaredLogger, db clients.DB) Notification {
 	return Notification{log: log, db: db}
 }

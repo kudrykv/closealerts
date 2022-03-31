@@ -88,6 +88,34 @@ func (n Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 
 	wg.Wait()
 
+	endedFor, err := n.notification.AlertEnded(ctx, alerts)
+	if err != nil {
+		return fmt.Errorf("alert ended: %w", err)
+	}
+
+	sf = make(chan struct{}, 4)
+	wg = sync.WaitGroup{}
+
+	for _, notification := range endedFor {
+		sf <- struct{}{}
+		wg.Add(1)
+
+		go func(notification types2.Notification) {
+			defer func() {
+				<-sf
+				wg.Done()
+			}()
+
+			n.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога минула")
+
+			if err := n.notification.Notified(ctx, notification); err != nil {
+				n.log.Errorw("notified", "err", err)
+			}
+		}(notification)
+	}
+
+	wg.Wait()
+
 	if err := n.notification.Unmark(ctx, alerts); err != nil {
 		return fmt.Errorf("unmark: %w", err)
 	}
