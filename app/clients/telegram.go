@@ -40,7 +40,17 @@ func RegisterTelegram(lc fx.Lifecycle, config types.Config, bot Telegram) {
 }
 
 func (r Telegram) SetupWebhookEndpoint(pattern string, cert string) error {
-	wh, err := tgbotapi.NewWebhookWithCert(pattern, tgbotapi.FilePath(cert))
+	var (
+		wh  tgbotapi.WebhookConfig
+		err error
+	)
+
+	if len(cert) > 0 {
+		wh, err = tgbotapi.NewWebhookWithCert(pattern, tgbotapi.FilePath(cert))
+	} else {
+		wh, err = tgbotapi.NewWebhook(pattern)
+	}
+
 	if err != nil {
 		return fmt.Errorf("new webhook: %w", err)
 	}

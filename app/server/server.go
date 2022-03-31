@@ -23,7 +23,11 @@ func NewServer(log *zap.SugaredLogger, cfg types.Config, mux *http.ServeMux) *Se
 func RegisterServer(lc fx.Lifecycle, config types.Config, server *Server) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			go func() { _ = server.server.ListenAndServeTLS(config.Cert, config.Key) }()
+			if len(config.Cert) > 0 {
+				go func() { _ = server.server.ListenAndServeTLS(config.Cert, config.Key) }()
+			} else {
+				go func() { _ = server.server.ListenAndServe() }()
+			}
 
 			return nil
 		},
