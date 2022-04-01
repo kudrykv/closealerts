@@ -246,11 +246,8 @@ func (r Commander) Auth(ctx context.Context, msg *tgbotapi.Message, args string)
 		return tgbotapi.NewMessage(msg.Chat.ID, "nopes"), nil
 	}
 
-	switch priv {
-	case "send_fake_event":
-		if err := r.chat.Grant(ctx, msg.Chat.ID, "send_fake_event"); err != nil {
-			return tgbotapi.MessageConfig{}, fmt.Errorf("grant: %w", err)
-		}
+	if err := r.chat.Grant(ctx, msg.Chat.ID, priv); err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("grant: %w", err)
 	}
 
 	return tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID), nil

@@ -6,4 +6,5 @@ type Chat struct {
 	Command  string `gorm:"column:command"`
 
 	PrivSendFakeEvent bool `gorm:"column:priv_send_fake_event"`
+	PrivBroadcast     bool `gorm:"column:priv_broadcast"`
 }

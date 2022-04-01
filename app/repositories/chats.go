@@ -47,7 +47,10 @@ func (r Chats) Grant(ctx context.Context, id int64, priv string) error {
 	switch priv {
 	case "send_fake_event":
 		col = "priv_send_fake_event"
+	case "send_broadcast":
+		col = "priv_broadcast"
 	default:
+		x
 		// silent noop
 		return nil
 	}
