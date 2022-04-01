@@ -55,6 +55,8 @@ func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error)
 		list = append(list, types2.Alert{ID: alert.Area, Type: alert.Type})
 	}
 
+	r.log.Infow("active from remote", "list", list)
+
 	return list, nil
 }
 
@@ -62,6 +64,8 @@ func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error 
 	if err := r.alerts.ReplaceAlerts(ctx, alerts); err != nil {
 		return fmt.Errorf("replace alerts: %w", err)
 	}
+
+	r.log.Debugw("replaced alerts with active ones")
 
 	return nil
 }
