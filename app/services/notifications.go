@@ -102,14 +102,6 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 					wg.Done()
 				}()
 
-				if len(notifications) == 0 {
-					return
-				}
-
-				if notifications[0].ChatID < 0 {
-					return
-				}
-
 				r.telegram.MaybeSendText(ctx, notifications[0].ChatID, strings.Join(notifications.Areas(), ", ")+": тривога!")
 
 				for _, notification := range notifications {
@@ -138,14 +130,6 @@ func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor 
 					<-sf
 					wg.Done()
 				}()
-
-				if len(notifications) == 0 {
-					return
-				}
-
-				if notifications[0].ChatID < 0 {
-					return
-				}
 
 				r.telegram.MaybeSendText(ctx, notifications[0].ChatID, "тривога минула: "+strings.Join(notifications.Areas(), ", "))
 			}(notifications)
