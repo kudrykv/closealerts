@@ -83,22 +83,22 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 
 	switch command {
 	case "start":
-		chattable, err = r.commander.Start(ctx, chat, args)
+		chattable, err = r.commander.Start(ctx, msg, args)
 
 	case "areas":
-		chattable, err = r.commander.Areas(ctx, chat, args)
+		chattable, err = r.commander.Areas(ctx, msg, args)
 
 	case "alerts":
-		chattable, err = r.commander.Alerts(ctx, chat, args)
+		chattable, err = r.commander.Alerts(ctx, msg, args)
 
 	case "track":
-		chattable, err = r.commander.Track(ctx, chat, args)
+		chattable, err = r.commander.Track(ctx, msg, args)
 
 	case "tracking":
-		chattable, err = r.commander.Tracking(ctx, chat, args)
+		chattable, err = r.commander.Tracking(ctx, msg, args)
 
 	case "stop":
-		chattable, err = r.commander.Stop(ctx, chat, args)
+		chattable, err = r.commander.Stop(ctx, msg, args)
 
 	default:
 		chattable = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")

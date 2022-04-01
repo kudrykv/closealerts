@@ -1,7 +1,6 @@
 package services
 
 import (
-	types2 "closealerts/app/repositories/types"
 	"closealerts/app/types"
 	"context"
 	"errors"
@@ -29,71 +28,71 @@ func NewCommander(
 	}
 }
 
-func (r Commander) Track(ctx context.Context, chat types2.Chat, args string) (tgbotapi.MessageConfig, error) {
+func (r Commander) Track(ctx context.Context, msg *tgbotapi.Message, args string) (tgbotapi.MessageConfig, error) {
 	if len(args) > 0 {
-		if err := r.notification.Track(ctx, chat.ID, args); err != nil {
+		if err := r.notification.Track(ctx, msg.Chat.ID, args); err != nil {
 			if errors.Is(err, types.ErrLinkExists) {
-				return tgbotapi.NewMessage(chat.ID, "вже пильную за "+args), nil
+				return tgbotapi.NewMessage(msg.Chat.ID, "вже пильную за "+args), nil
 			}
 
 			return tgbotapi.MessageConfig{}, fmt.Errorf("track: %w", err)
 		}
 
-		return tgbotapi.NewMessage(chat.ID, "буду пильнувати за "+args), nil
+		return tgbotapi.NewMessage(msg.Chat.ID, "буду пильнувати за "+args), nil
 	}
 
-	if err := r.chat.SetCommand(ctx, chat.ID, "track"); err != nil {
+	if err := r.chat.SetCommand(ctx, msg.Chat.ID, "track"); err != nil {
 		return tgbotapi.MessageConfig{}, fmt.Errorf("set command: %w", err)
 	}
 
-	return tgbotapi.NewMessage(chat.ID, "вкажи територію, за якою пильнувати"), nil
+	return tgbotapi.NewMessage(msg.Chat.ID, "вкажи територію, за якою пильнувати"), nil
 }
 
-func (r Commander) Tracking(ctx context.Context, chat types2.Chat, _ string) (tgbotapi.MessageConfig, error) {
-	list, err := r.notification.Tracking(ctx, chat.ID)
+func (r Commander) Tracking(ctx context.Context, msg *tgbotapi.Message, _ string) (tgbotapi.MessageConfig, error) {
+	list, err := r.notification.Tracking(ctx, msg.Chat.ID)
 	if err != nil {
 		return tgbotapi.MessageConfig{}, fmt.Errorf("tracking: %w", err)
 	}
 
 	if len(list) == 0 {
-		return tgbotapi.NewMessage(chat.ID, "ще нічого не трекаєш"), nil
+		return tgbotapi.NewMessage(msg.Chat.ID, "ще нічого не трекаєш"), nil
 	}
 
-	return tgbotapi.NewMessage(chat.ID, strings.Join(list.Areas(), ", ")), nil
+	return tgbotapi.NewMessage(msg.Chat.ID, strings.Join(list.Areas(), ", ")), nil
 }
 
-func (r Commander) Stop(ctx context.Context, chat types2.Chat, args string) (tgbotapi.MessageConfig, error) {
+func (r Commander) Stop(ctx context.Context, msg *tgbotapi.Message, args string) (tgbotapi.MessageConfig, error) {
 	if len(args) > 0 {
-		if err := r.notification.Stop(ctx, chat.ID, args); err != nil {
+		if err := r.notification.Stop(ctx, msg.Chat.ID, args); err != nil {
 			return tgbotapi.MessageConfig{}, fmt.Errorf("stop: %w", err)
 		}
 
-		return tgbotapi.NewMessage(chat.ID, "відписуюсь від "+args), nil
+		return tgbotapi.NewMessage(msg.Chat.ID, "відписуюсь від "+args), nil
 	}
 
-	if err := r.chat.SetCommand(ctx, chat.ID, "stop"); err != nil {
+	if err := r.chat.SetCommand(ctx, msg.Chat.ID, "stop"); err != nil {
 		return tgbotapi.MessageConfig{}, fmt.Errorf("set command: %w", err)
 	}
 
-	return tgbotapi.NewMessage(chat.ID, "вкажи територію від якої відписатись"), nil
+	return tgbotapi.NewMessage(msg.Chat.ID, "вкажи територію від якої відписатись"), nil
 }
 
-func (r Commander) Alerts(ctx context.Context, chat types2.Chat, _ string) (tgbotapi.MessageConfig, error) {
+func (r Commander) Alerts(ctx context.Context, msg *tgbotapi.Message, _ string) (tgbotapi.MessageConfig, error) {
 	alerts, err := r.alert.GetActive(ctx)
 	if err != nil {
 		return tgbotapi.MessageConfig{}, fmt.Errorf("get active: %w", err)
 	}
 
 	if len(alerts) == 0 {
-		return tgbotapi.NewMessage(chat.ID, "все тихо"), nil
+		return tgbotapi.NewMessage(msg.Chat.ID, "все тихо"), nil
 	}
 
-	return tgbotapi.NewMessage(chat.ID, strings.Join(alerts.Areas(), ", ")), nil
+	return tgbotapi.NewMessage(msg.Chat.ID, strings.Join(alerts.Areas(), ", ")), nil
 }
 
-func (r Commander) Start(_ context.Context, chat types2.Chat, _ string) (tgbotapi.MessageConfig, error) {
+func (r Commander) Start(_ context.Context, msg *tgbotapi.Message, _ string) (tgbotapi.MessageConfig, error) {
 	return tgbotapi.NewMessage(
-		chat.ID,
+		msg.Chat.ID,
 		`Пильнуй сповіщення в сусідніх областях.
 
 Приклад, як створити сповіщення:
@@ -106,7 +105,7 @@ func (r Commander) Start(_ context.Context, chat types2.Chat, _ string) (tgbotap
 	), nil
 }
 
-func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbotapi.Chattable, error) {
+func (r Commander) Areas(ctx context.Context, msg *tgbotapi.Message, _ string) (tgbotapi.Chattable, error) {
 	areas := map[string]struct{}{
 		"Волинська":         {},
 		"Вінницька":         {},
@@ -134,7 +133,7 @@ func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbot
 		"Чернігівська":      {},
 	}
 
-	tracking, err := r.notification.Tracking(ctx, chat.ID)
+	tracking, err := r.notification.Tracking(ctx, msg.Chat.ID)
 	if err != nil {
 		return tgbotapi.MessageConfig{}, fmt.Errorf("tracking: %w", err)
 	}
@@ -152,8 +151,8 @@ func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbot
 		text += "\n\nПідписки: " + areasTracking.Sort().Join(", ")
 	}
 
-	msg := tgbotapi.NewMessage(chat.ID, text)
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+	outMsg := tgbotapi.NewMessage(msg.Chat.ID, text)
+	outMsg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Волинська", "toggle_area:Волинська"),
 			tgbotapi.NewInlineKeyboardButtonData("Вінницька", "toggle_area:Вінницька"),
@@ -196,7 +195,7 @@ func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbot
 		),
 	)
 
-	return msg, nil
+	return outMsg, nil
 }
 
 func (r Commander) ToggleArea(
