@@ -5,6 +5,8 @@ import (
 	"closealerts/app/services"
 	"closealerts/app/types"
 	"context"
+	"fmt"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -39,10 +41,14 @@ func NewUpdate(
 
 func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	msg := update.Message
+	cq := update.CallbackQuery
 
 	switch {
 	case msg != nil:
 		r.handleMessage(ctx, msg)
+
+	case cq != nil:
+		r.handleCallbackQuery(ctx, cq)
 	}
 }
 
@@ -99,7 +105,7 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 	}
 
 	if err != nil {
-		r.log.Errorw("track", "err", err)
+		r.log.Errorw(command, "err", err)
 		r.bot.MaybeSendText(ctx, chat.ID, "в мене щось пішло не так, спробуй ще раз")
 	} else {
 		r.bot.MaybeSend(ctx, chattable)
@@ -112,4 +118,42 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 			return
 		}
 	}
+}
+
+func (r UpdateHandler) handleCallbackQuery(ctx context.Context, cq *tgbotapi.CallbackQuery) {
+	msg := cq.Message
+	chat := msg.Chat
+	split := strings.SplitN(cq.Data, ":", 2)
+
+	if len(split) != 2 {
+		r.log.Errorw(
+			"bad data",
+			"data", cq.Data,
+			"msg_id", msg.MessageID,
+			"chat_id", chat.ID,
+		)
+
+		return
+	}
+
+	action, payload := split[0], split[1]
+	var (
+		chattable tgbotapi.Chattable
+		err       error
+	)
+
+	switch action {
+	case "toggle_area":
+		chattable, err = r.commander.ToggleArea(ctx, cq, payload)
+	default:
+		err = fmt.Errorf("%s: %w", action, types.ErrUnknownCBAction)
+	}
+
+	if err != nil {
+		r.log.Errorw(action, "err", err)
+	} else {
+		r.bot.MaybeSend(ctx, chattable)
+	}
+
+	return
 }

@@ -152,46 +152,80 @@ func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbot
 	msg := tgbotapi.NewMessage(chat.ID, text)
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Волинська", "Волинська"),
-			tgbotapi.NewInlineKeyboardButtonData("Вінницька", "Вінницька"),
-			tgbotapi.NewInlineKeyboardButtonData("Дніпропетровська", "Дніпропетровська"),
+			tgbotapi.NewInlineKeyboardButtonData("Волинська", "toggle_area:Волинська"),
+			tgbotapi.NewInlineKeyboardButtonData("Вінницька", "toggle_area:Вінницька"),
+			tgbotapi.NewInlineKeyboardButtonData("Дніпропетровська", "toggle_area:Дніпропетровська"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Донецька", "Донецька"),
-			tgbotapi.NewInlineKeyboardButtonData("Житомирська", "Житомирська"),
-			tgbotapi.NewInlineKeyboardButtonData("Закарпатська", "Закарпатська"),
+			tgbotapi.NewInlineKeyboardButtonData("Донецька", "toggle_area:Донецька"),
+			tgbotapi.NewInlineKeyboardButtonData("Житомирська", "toggle_area:Житомирська"),
+			tgbotapi.NewInlineKeyboardButtonData("Закарпатська", "toggle_area:Закарпатська"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Запорізька", "Запорізька"),
-			tgbotapi.NewInlineKeyboardButtonData("Івано-Франківська", "Івано-Франківська"),
-			tgbotapi.NewInlineKeyboardButtonData("Київська", "Київська"),
+			tgbotapi.NewInlineKeyboardButtonData("Запорізька", "toggle_area:Запорізька"),
+			tgbotapi.NewInlineKeyboardButtonData("Івано-Франківська", "toggle_area:Івано-Франківська"),
+			tgbotapi.NewInlineKeyboardButtonData("Київська", "toggle_area:Київська"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Кіровоградська", "Кіровоградська"),
-			tgbotapi.NewInlineKeyboardButtonData("Луганська", "Луганська"),
-			tgbotapi.NewInlineKeyboardButtonData("Львівська", "Львівська"),
+			tgbotapi.NewInlineKeyboardButtonData("Кіровоградська", "toggle_area:Кіровоградська"),
+			tgbotapi.NewInlineKeyboardButtonData("Луганська", "toggle_area:Луганська"),
+			tgbotapi.NewInlineKeyboardButtonData("Львівська", "toggle_area:Львівська"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Миколаївська", "Миколаївська"),
-			tgbotapi.NewInlineKeyboardButtonData("Одеська", "Одеська"),
-			tgbotapi.NewInlineKeyboardButtonData("Полтавська", "Полтавська"),
+			tgbotapi.NewInlineKeyboardButtonData("Миколаївська", "toggle_area:Миколаївська"),
+			tgbotapi.NewInlineKeyboardButtonData("Одеська", "toggle_area:Одеська"),
+			tgbotapi.NewInlineKeyboardButtonData("Полтавська", "toggle_area:Полтавська"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Рівненська", "Рівненська"),
-			tgbotapi.NewInlineKeyboardButtonData("Сумська", "Сумська"),
-			tgbotapi.NewInlineKeyboardButtonData("Тернопільська", "Тернопільська"),
+			tgbotapi.NewInlineKeyboardButtonData("Рівненська", "toggle_area:Рівненська"),
+			tgbotapi.NewInlineKeyboardButtonData("Сумська", "toggle_area:Сумська"),
+			tgbotapi.NewInlineKeyboardButtonData("Тернопільська", "toggle_area:Тернопільська"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Харківська", "Харківська"),
-			tgbotapi.NewInlineKeyboardButtonData("Херсонська", "Херсонська"),
-			tgbotapi.NewInlineKeyboardButtonData("Хмельницька", "Хмельницька"),
+			tgbotapi.NewInlineKeyboardButtonData("Харківська", "toggle_area:Харківська"),
+			tgbotapi.NewInlineKeyboardButtonData("Херсонська", "toggle_area:Херсонська"),
+			tgbotapi.NewInlineKeyboardButtonData("Хмельницька", "toggle_area:Хмельницька"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Черкаська", "Черкаська"),
-			tgbotapi.NewInlineKeyboardButtonData("Чернівецька", "Чернівецька"),
-			tgbotapi.NewInlineKeyboardButtonData("Чернігівська", "Чернігівська"),
+			tgbotapi.NewInlineKeyboardButtonData("Черкаська", "toggle_area:Черкаська"),
+			tgbotapi.NewInlineKeyboardButtonData("Чернівецька", "toggle_area:Чернівецька"),
+			tgbotapi.NewInlineKeyboardButtonData("Чернігівська", "toggle_area:Чернігівська"),
 		),
 	)
 
 	return msg, nil
+}
+
+func (r Commander) ToggleArea(
+	ctx context.Context, cq *tgbotapi.CallbackQuery, payload string,
+) (tgbotapi.EditMessageTextConfig, error) {
+	tracking, err := r.notification.Tracking(ctx, cq.Message.Chat.ID)
+	if err != nil {
+		return tgbotapi.EditMessageTextConfig{}, fmt.Errorf("tracking: %w", err)
+	}
+
+	trackingAreas := tracking.Areas()
+
+	if tracking.Tracking(payload) {
+		if err = r.notification.Stop(ctx, cq.Message.Chat.ID, payload); err != nil {
+			return tgbotapi.EditMessageTextConfig{}, fmt.Errorf("stop: %w", err)
+		}
+
+		trackingAreas = trackingAreas.Delete(payload)
+	} else {
+		if err = r.notification.Track(ctx, cq.Message.Chat.ID, payload); err != nil {
+			return tgbotapi.EditMessageTextConfig{}, fmt.Errorf("track: %w", err)
+		}
+
+		trackingAreas = append(trackingAreas, payload)
+	}
+
+	text := "Підписки: " + trackingAreas.Join(", ")
+	if len(trackingAreas) == 0 {
+		text = "Нема підписок"
+	}
+
+	return tgbotapi.
+			NewEditMessageTextAndMarkup(cq.Message.Chat.ID, cq.Message.MessageID, text, *cq.Message.ReplyMarkup),
+		nil
 }

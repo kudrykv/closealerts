@@ -1,6 +1,9 @@
 package types
 
-import "sort"
+import (
+	"closealerts/app/types"
+	"sort"
+)
 
 type Notification struct {
 	ChatID   int64  `gorm:"column:chat_id"`
@@ -10,7 +13,7 @@ type Notification struct {
 
 type Notifications []Notification
 
-func (r Notifications) Areas() []string {
+func (r Notifications) Areas() types.Stringies {
 	if len(r) == 0 {
 		return nil
 	}
@@ -52,4 +55,14 @@ func (r Notifications) GroupByChatID() map[int64]Notifications {
 	out[ptrChatID] = cp[start:]
 
 	return out
+}
+
+func (r Notifications) Tracking(payload string) bool {
+	for _, notification := range r {
+		if notification.Area == payload {
+			return true
+		}
+	}
+
+	return false
 }
