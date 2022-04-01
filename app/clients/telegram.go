@@ -69,6 +69,14 @@ func (r Telegram) SetupWebhookEndpoint(pattern string, cert string) error {
 	return nil
 }
 
+func (r Telegram) MaybeSend(_ context.Context, c tgbotapi.Chattable) {
+	r.rl.Take()
+
+	if _, err := r.Client.Send(c); err != nil {
+		r.log.Errorw("send new message", "err", err)
+	}
+}
+
 func (r Telegram) MaybeSendText(_ context.Context, chatID int64, msg string) {
 	r.rl.Take()
 

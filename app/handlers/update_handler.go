@@ -6,6 +6,7 @@ import (
 	"closealerts/app/types"
 	"context"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +69,7 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		clearCmd = false
 	}
 
-	var text string
+	var text tgbotapi.Chattable
 
 	switch command {
 	case "start":
@@ -87,16 +88,14 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		text, err = r.commander.Alerts(ctx, chat, args)
 
 	default:
-		text = "я такої команди не знаю"
+		text = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")
 	}
 
 	if err != nil {
 		r.log.Errorw("track", "err", err)
 		r.bot.MaybeSendText(ctx, chat.ID, "в мене щось пішло не так, спробуй ще раз")
-	}
-
-	if len(text) > 0 {
-		r.bot.MaybeSendText(ctx, chat.ID, text)
+	} else {
+		r.bot.MaybeSend(ctx, text)
 	}
 
 	if clearCmd {
