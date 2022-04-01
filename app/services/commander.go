@@ -2,7 +2,9 @@ package services
 
 import (
 	types2 "closealerts/app/repositories/types"
+	"closealerts/app/types"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -28,6 +30,10 @@ func NewCommander(
 func (r Commander) Track(ctx context.Context, chat types2.Chat, args string) (string, error) {
 	if len(args) > 0 {
 		if err := r.notification.Track(ctx, chat.ID, args); err != nil {
+			if errors.Is(err, types.ErrLinkExists) {
+				return "вже пильную за " + args, nil
+			}
+
 			return "", fmt.Errorf("track: %w", err)
 		}
 

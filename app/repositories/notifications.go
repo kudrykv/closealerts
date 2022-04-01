@@ -3,7 +3,9 @@ package repositories
 import (
 	"closealerts/app/clients"
 	types2 "closealerts/app/repositories/types"
+	"closealerts/app/types"
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -17,12 +19,16 @@ type Notification struct {
 
 func (n Notification) Track(ctx context.Context, chatID int64, area string) error {
 	err := n.db.DB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		//var notif types2.Notification
-		//
-		//err := tx.WithContext(ctx).Where("chat_id = ? and area = ?", chatID, area).Select(&notif).Error
-		//if !errors.Is(err, gorm.ErrRecordNotFound) {
-		//	return errors.New("record already exists")
-		//}
+		var notif types2.Notification
+
+		err := tx.WithContext(ctx).Where("chat_id = ? and area = ?", chatID, area).Take(&notif).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("select: %w", err)
+		}
+
+		if notif.ChatID > 0 {
+			return fmt.Errorf("%d-%s: %w", chatID, area, types.ErrLinkExists)
+		}
 
 		if err := tx.WithContext(ctx).Create(types2.Notification{ChatID: chatID, Area: area}).Error; err != nil {
 			return fmt.Errorf("track %d %s: %w", chatID, area, err)

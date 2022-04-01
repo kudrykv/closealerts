@@ -95,7 +95,9 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		r.bot.MaybeSendText(ctx, chat.ID, "в мене щось пішло не так, спробуй ще раз")
 	}
 
-	r.bot.MaybeSendText(ctx, chat.ID, text)
+	if len(text) > 0 {
+		r.bot.MaybeSendText(ctx, chat.ID, text)
+	}
 
 	if clearCmd {
 		if err := r.chat.ClearCommand(ctx, chat.ID); err != nil {
