@@ -1,11 +1,15 @@
 package services
 
 import (
+	"closealerts/app/clients"
+	types2 "closealerts/app/repositories/types"
 	"closealerts/app/types"
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -15,15 +19,18 @@ type Commander struct {
 	chat         Chats
 	alert        Alerts
 	fake         Fakes
+	telegram     clients.Telegram
 }
 
 func NewCommander(
+	tg clients.Telegram,
 	chat Chats,
 	notification Notification,
 	alert Alerts,
 	fake Fakes,
 ) Commander {
 	return Commander{
+		telegram:     tg,
 		chat:         chat,
 		notification: notification,
 		alert:        alert,
@@ -265,4 +272,46 @@ func (r Commander) AdminFakeAlertIn(
 	}
 
 	return tgbotapi.NewMessage(msg.Chat.ID, "sent"), nil
+}
+
+func (r Commander) Broadcast(ctx context.Context, msg *tgbotapi.Message, args string) (tgbotapi.Chattable, error) {
+	if len(args) > 0 {
+		list, err := r.chat.All(ctx)
+		if err != nil {
+			return tgbotapi.MessageConfig{}, fmt.Errorf("all: %w", err)
+		}
+
+		//if len(list) == 1 {
+		//	return tgbotapi.NewMessage(msg.Chat.ID, "Only one chat -- that is you"), nil
+		//}
+
+		r.telegram.MaybeSendText(ctx, msg.Chat.ID, "Знайшов "+strconv.Itoa(len(list))+" чатів — броадкастю...")
+
+		wg := &sync.WaitGroup{}
+		sf := make(chan struct{}, 10)
+
+		for _, chat := range list {
+			sf <- struct{}{}
+			wg.Add(1)
+
+			go func(chat types2.Chat) {
+				defer func() {
+					<-sf
+					wg.Done()
+				}()
+
+				r.telegram.MaybeSendText(ctx, chat.ID, args)
+			}(chat)
+		}
+
+		wg.Wait()
+
+		return tgbotapi.NewMessage(msg.Chat.ID, "заброадкастив"), nil
+	}
+
+	if err := r.chat.SetCommand(ctx, msg.Chat.ID, "admin_broadcast"); err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("set command: %w", err)
+	}
+
+	return tgbotapi.NewMessage(msg.Chat.ID, "що будемо броадкастити?"), nil
 }

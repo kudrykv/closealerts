@@ -51,3 +51,12 @@ func (r Chats) Grant(ctx context.Context, chatID int64, priv string) error {
 
 	return nil
 }
+
+func (r Chats) All(ctx context.Context) (types2.Chats, error) {
+	list, err := r.chat.All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("all: %w", err)
+	}
+
+	return list, nil
+}

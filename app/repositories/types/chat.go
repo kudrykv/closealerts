@@ -8,3 +8,5 @@ type Chat struct {
 	PrivSendFakeEvent bool `gorm:"column:priv_send_fake_event"`
 	PrivBroadcast     bool `gorm:"column:priv_broadcast"`
 }
+
+type Chats []Chat

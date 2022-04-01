@@ -61,3 +61,12 @@ func (r Chats) Grant(ctx context.Context, id int64, priv string) error {
 
 	return nil
 }
+
+func (r Chats) All(ctx context.Context) (types2.Chats, error) {
+	var list types2.Chats
+	if err := r.db.DB().WithContext(ctx).Find(&list).Error; err != nil {
+		return nil, fmt.Errorf("find: %w", err)
+	}
+
+	return list, nil
+}

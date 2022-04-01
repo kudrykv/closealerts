@@ -105,6 +105,15 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 
 		chattable, err = r.commander.AdminFakeAlertIn(ctx, msg, args)
 
+	case "admin_broadcast":
+		if !chat.PrivBroadcast {
+			chattable = tgbotapi.NewMessage(chat.ID, "Please auth first")
+
+			break
+		}
+
+		chattable, err = r.commander.Broadcast(ctx, msg, args)
+
 	default:
 		chattable = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")
 	}
