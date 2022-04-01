@@ -1,6 +1,9 @@
 package types
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 type Stringies []string
 
@@ -22,4 +25,17 @@ func (r Stringies) Delete(payload string) Stringies {
 
 func (r Stringies) Join(s string) string {
 	return strings.Join(r, s)
+}
+
+func (r Stringies) Sort() Stringies {
+	if len(r) == 0 {
+		return nil
+	}
+
+	cp := make([]string, len(r))
+	copy(cp, r)
+
+	sort.Slice(cp, func(i, j int) bool { return cp[i] < cp[j] })
+
+	return cp
 }

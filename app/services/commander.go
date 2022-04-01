@@ -136,7 +136,7 @@ func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbot
 		return tgbotapi.MessageConfig{}, fmt.Errorf("tracking: %w", err)
 	}
 
-	var areasTracking []string
+	var areasTracking types.Stringies
 
 	for _, notification := range tracking {
 		if _, ok := areas[notification.Area]; ok {
@@ -146,7 +146,7 @@ func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbot
 
 	text := "можеш обрати на які області підписатись"
 	if len(areasTracking) > 0 {
-		text += "\n\nПідписки: " + strings.Join(areasTracking, ", ")
+		text += "\n\nПідписки: " + areasTracking.Sort().Join(", ")
 	}
 
 	msg := tgbotapi.NewMessage(chat.ID, text)
@@ -220,7 +220,7 @@ func (r Commander) ToggleArea(
 		trackingAreas = append(trackingAreas, payload)
 	}
 
-	text := "Підписки: " + trackingAreas.Join(", ")
+	text := "Підписки: " + trackingAreas.Sort().Join(", ")
 	if len(trackingAreas) == 0 {
 		text = "Нема підписок"
 	}
