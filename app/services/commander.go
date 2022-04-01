@@ -14,17 +14,20 @@ type Commander struct {
 	notification Notification
 	chat         Chats
 	alert        Alerts
+	fake         Fakes
 }
 
 func NewCommander(
 	chat Chats,
 	notification Notification,
 	alert Alerts,
+	fake Fakes,
 ) Commander {
 	return Commander{
 		chat:         chat,
 		notification: notification,
 		alert:        alert,
+		fake:         fake,
 	}
 }
 
@@ -251,4 +254,18 @@ func (r Commander) Auth(ctx context.Context, msg *tgbotapi.Message, args string)
 	}
 
 	return tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID), nil
+}
+
+func (r Commander) AdminFakeAlertIn(
+	ctx context.Context, msg *tgbotapi.Message, args string,
+) (tgbotapi.MessageConfig, error) {
+	if len(args) == 0 {
+		return tgbotapi.NewMessage(msg.Chat.ID, "specify area name"), nil
+	}
+
+	if err := r.fake.FakeAlert(ctx, args); err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("alert: %w", err)
+	}
+
+	return tgbotapi.NewMessage(msg.Chat.ID, "sent"), nil
 }

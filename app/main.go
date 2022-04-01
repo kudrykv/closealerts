@@ -29,6 +29,7 @@ func main() {
 			repositories.NewNotification,
 			repositories.NewChats,
 
+			services.NewFakes,
 			services.NewAlerts,
 			services.NewNotification,
 			services.NewChats,
