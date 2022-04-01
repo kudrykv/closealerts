@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -22,7 +23,19 @@ func NewAlerts(log *zap.SugaredLogger, alerts repositories.Alerts) Alerts {
 }
 
 func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error) {
-	return r.ukrzen(ctx)
+	list, err := r.ukrzen(ctx)
+	if err != nil {
+		r.log.Errorw("active alerts", "source", "ukrzen", "err", err)
+	} else {
+		return list, nil
+	}
+
+	list, err = r.alarmmap(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("alarmmap: %w", err)
+	}
+
+	return list, nil
 }
 
 func (r Alerts) ReplaceAlerts(ctx context.Context, alerts []types2.Alert) error {
@@ -80,13 +93,39 @@ func (r Alerts) ukrzen(ctx context.Context) ([]types2.Alert, error) {
 	return list, nil
 }
 
-//func (r Alerts) alarmmap(ctx context.Context) ([]types2.Alert, error) {
-//	var (
-//		list types2.Alerts
-//		err  error
-//	)
-//
-//}
+type AlarmMapResponseItem struct {
+	District string `json:"district"`
+}
+
+func (r Alerts) alarmmap(ctx context.Context) ([]types2.Alert, error) {
+	var (
+		resp []AlarmMapResponseItem
+		err  error
+	)
+
+	if err = mkReqUnmarshal(ctx, "https://alarmmap.online/assets/alerts.json", &resp); err != nil {
+		return nil, fmt.Errorf("mk req: %w", err)
+	}
+
+	if len(resp) == 0 {
+		return nil, nil
+	}
+
+	list := make([]types2.Alert, 0, len(resp))
+
+	for _, alert := range resp {
+		area := strings.SplitN(alert.District, "_", 2)[0]
+		if area == "ІваноФранківська" {
+			area = "Івано-Франківська"
+		}
+
+		list = append(list, types2.Alert{ID: alert.District})
+	}
+
+	r.log.Infow("active from remote", "list", list)
+
+	return list, nil
+}
 
 func mkReqUnmarshal(ctx context.Context, url string, dst interface{}) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
