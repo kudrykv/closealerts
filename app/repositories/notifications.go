@@ -146,6 +146,8 @@ func (r Notification) AlertEnded(ctx context.Context, alerts []types2.Alert) (ty
 		return nil, fmt.Errorf("alert ended: %w", err)
 	}
 
+	r.log.Debug("mark which alerts has ended")
+
 	return endedFor, nil
 }
 

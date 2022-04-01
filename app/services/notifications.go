@@ -96,6 +96,7 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 					wg.Done()
 				}()
 
+				r.log.Debugw("notify about alerts", "chat", chatID, "areas", notifications.Areas())
 				r.telegram.MaybeSendText(ctx, chatID, strings.Join(notifications.Areas(), ", ")+": тривога!")
 
 				for _, notification := range notifications {
@@ -125,6 +126,7 @@ func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor 
 					wg.Done()
 				}()
 
+				r.log.Debugw("notify about ended alerts", "chat", chatID, "areas", notifications.Areas())
 				r.telegram.MaybeSendText(ctx, chatID, "тривога минула: "+strings.Join(notifications.Areas(), ", "))
 			}(chatID, notifications)
 		}
