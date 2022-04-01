@@ -39,10 +39,14 @@ func NewUpdate(
 
 func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	msg := update.Message
-	if msg == nil {
-		return
-	}
 
+	switch {
+	case msg != nil:
+		r.handleMessage(ctx, msg)
+	}
+}
+
+func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 	r.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
 
 	// load "user" from db
@@ -86,6 +90,9 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 
 	case "alerts":
 		chattable, err = r.commander.Alerts(ctx, chat, args)
+
+	case "areas":
+		chattable, err = r.commander.Areas(ctx, chat, args)
 
 	default:
 		chattable = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")

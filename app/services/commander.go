@@ -102,3 +102,96 @@ func (r Commander) Start(_ context.Context, chat types2.Chat, _ string) (tgbotap
 Назва має повністю збігатись з тією, що на карті https://war.ukrzen.in.ua/alerts/`,
 	), nil
 }
+
+func (r Commander) Areas(ctx context.Context, chat types2.Chat, _ string) (tgbotapi.Chattable, error) {
+	areas := map[string]struct{}{
+		"Волинська":         {},
+		"Вінницька":         {},
+		"Дніпропетровська":  {},
+		"Донецька":          {},
+		"Житомирська":       {},
+		"Закарпатська":      {},
+		"Запорізька":        {},
+		"Івано-Франківська": {},
+		"Київська":          {},
+		"Кіровоградська":    {},
+		"Луганська":         {},
+		"Львівська":         {},
+		"Миколаївська":      {},
+		"Одеська":           {},
+		"Полтавська":        {},
+		"Рівненська":        {},
+		"Сумська":           {},
+		"Тернопільська":     {},
+		"Харківська":        {},
+		"Херсонська":        {},
+		"Хмельницька":       {},
+		"Черкаська":         {},
+		"Чернівецька":       {},
+		"Чернігівська":      {},
+	}
+
+	tracking, err := r.notification.Tracking(ctx, chat.ID)
+	if err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("tracking: %w", err)
+	}
+
+	var areasTracking []string
+
+	for _, notification := range tracking {
+		if _, ok := areas[notification.Area]; ok {
+			areasTracking = append(areasTracking, notification.Area)
+		}
+	}
+
+	text := "можеш обрати на які області підписатись"
+	if len(areasTracking) > 0 {
+		text += "\n\nПідписки: " + strings.Join(areasTracking, ", ")
+	}
+
+	msg := tgbotapi.NewMessage(chat.ID, text)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Волинська", "Волинська"),
+			tgbotapi.NewInlineKeyboardButtonData("Вінницька", "Вінницька"),
+			tgbotapi.NewInlineKeyboardButtonData("Дніпропетровська", "Дніпропетровська"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Донецька", "Донецька"),
+			tgbotapi.NewInlineKeyboardButtonData("Житомирська", "Житомирська"),
+			tgbotapi.NewInlineKeyboardButtonData("Закарпатська", "Закарпатська"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Запорізька", "Запорізька"),
+			tgbotapi.NewInlineKeyboardButtonData("Івано-Франківська", "Івано-Франківська"),
+			tgbotapi.NewInlineKeyboardButtonData("Київська", "Київська"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Кіровоградська", "Кіровоградська"),
+			tgbotapi.NewInlineKeyboardButtonData("Луганська", "Луганська"),
+			tgbotapi.NewInlineKeyboardButtonData("Львівська", "Львівська"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Миколаївська", "Миколаївська"),
+			tgbotapi.NewInlineKeyboardButtonData("Одеська", "Одеська"),
+			tgbotapi.NewInlineKeyboardButtonData("Полтавська", "Полтавська"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Рівненська", "Рівненська"),
+			tgbotapi.NewInlineKeyboardButtonData("Сумська", "Сумська"),
+			tgbotapi.NewInlineKeyboardButtonData("Тернопільська", "Тернопільська"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Харківська", "Харківська"),
+			tgbotapi.NewInlineKeyboardButtonData("Херсонська", "Херсонська"),
+			tgbotapi.NewInlineKeyboardButtonData("Хмельницька", "Хмельницька"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Черкаська", "Черкаська"),
+			tgbotapi.NewInlineKeyboardButtonData("Чернівецька", "Чернівецька"),
+			tgbotapi.NewInlineKeyboardButtonData("Чернігівська", "Чернігівська"),
+		),
+	)
+
+	return msg, nil
+}
