@@ -5,7 +5,6 @@ import (
 	"closealerts/app/services"
 	"closealerts/app/types"
 	"context"
-	"strings"
 
 	"go.uber.org/zap"
 )
@@ -46,9 +45,8 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	r.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
 
 	var (
-		text     string
-		err      error
-		clearCmd bool
+		text string
+		err  error
 	)
 
 	// load "user" from db
@@ -65,39 +63,31 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		return
 	}
 
+	command := chat.Command
+	args := msg.Text
+	clearCmd := true
+
 	if msg.IsCommand() {
-		args := strings.TrimSpace(msg.CommandArguments())
+		command = msg.Command()
+		args = msg.CommandArguments()
+		clearCmd = false
+	}
 
-		switch msg.Command() {
-		case "track":
-			text, err = r.commander.Track(ctx, chat, args)
+	switch command {
+	case "track":
+		text, err = r.commander.Track(ctx, chat, args)
 
-		case "tracking":
-			text, err = r.commander.Tracking(ctx, chat, args)
+	case "tracking":
+		text, err = r.commander.Tracking(ctx, chat, args)
 
-		case "stop":
-			text, err = r.commander.Stop(ctx, chat, args)
+	case "stop":
+		text, err = r.commander.Stop(ctx, chat, args)
 
-		case "alerts":
-			text, err = r.commander.Alerts(ctx, chat, args)
+	case "alerts":
+		text, err = r.commander.Alerts(ctx, chat, args)
 
-		default:
-			text = "я такої команди не знаю"
-		}
-	} else {
-		clearCmd = true
-
-		switch chat.Command {
-		case "track":
-			text, err = r.commander.Track(ctx, chat, msg.Text)
-
-		case "stop":
-			text, err = r.commander.Stop(ctx, chat, msg.Text)
-
-		default:
-			text = "а, шо?"
-			clearCmd = false
-		}
+	default:
+		text = "я такої команди не знаю"
 	}
 
 	if err != nil {
