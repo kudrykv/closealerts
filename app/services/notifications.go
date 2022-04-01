@@ -61,8 +61,6 @@ func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 		return fmt.Errorf("eligible: %w", err)
 	}
 
-	r.log.Infow("notify about new alerts", "by_chat_id", eligible.GroupByChatID())
-
 	alertsWg := r.notifyAboutAlertsAsync(ctx, eligible)
 
 	endedFor, err := r.notification.AlertEnded(ctx, alerts)
@@ -70,15 +68,11 @@ func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 		return fmt.Errorf("alert ended: %w", err)
 	}
 
-	r.log.Infow("notify about ended alerts", "by_chat_id", endedFor.GroupByChatID())
-
 	endedAlertsWg := r.notifyAboutEndedAlertsAsync(ctx, endedFor)
 
 	if err := r.notification.Unmark(ctx, alerts); err != nil {
 		return fmt.Errorf("unmark: %w", err)
 	}
-
-	r.log.Info("unmarked alerts")
 
 	alertsWg.Wait()
 	endedAlertsWg.Wait()
