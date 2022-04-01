@@ -88,10 +88,6 @@ func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types2.Notifications) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 
-	if len(eligible) == 0 {
-		return wg
-	}
-
 	go func() {
 		sf := make(chan struct{}, 10)
 
@@ -104,6 +100,10 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 					<-sf
 					wg.Done()
 				}()
+
+				if len(notifications) == 0 {
+					return
+				}
 
 				if notifications[0].ChatID < 0 {
 					return
@@ -141,6 +141,10 @@ func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor 
 					<-sf
 					wg.Done()
 				}()
+
+				if len(notifications) == 0 {
+					return
+				}
 
 				if notifications[0].ChatID < 0 {
 					return
