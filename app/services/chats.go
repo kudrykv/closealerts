@@ -43,3 +43,11 @@ func (r Chats) SetCommand(ctx context.Context, chatID int64, command string) err
 
 	return nil
 }
+
+func (r Chats) Grant(ctx context.Context, chatID int64, priv string) error {
+	if err := r.chat.Grant(ctx, chatID, priv); err != nil {
+		return fmt.Errorf("grant: %w", err)
+	}
+
+	return nil
+}

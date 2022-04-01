@@ -40,3 +40,22 @@ func (r Chats) SetCommand(ctx context.Context, id int64, command string) error {
 
 	return nil
 }
+
+func (r Chats) Grant(ctx context.Context, id int64, priv string) error {
+	var col string
+
+	switch priv {
+	case "send_fake_event":
+		col = "priv_send_fake_event"
+	default:
+		// silent noop
+		return nil
+	}
+
+	err := r.db.DB().WithContext(ctx).Model(&types2.Chat{}).Where("id = ?", id).UpdateColumn(col, true).Error
+	if err != nil {
+		return fmt.Errorf("set priv %s: %w", priv, err)
+	}
+
+	return nil
+}

@@ -119,7 +119,7 @@ func (r Telegram) SetupWebhookEndpoint(pattern string, cert string) error {
 func (r Telegram) MaybeSend(_ context.Context, c tgbotapi.Chattable) {
 	r.rl.Take()
 
-	if _, err := r.Client.Send(c); err != nil {
+	if _, err := r.Client.Request(c); err != nil {
 		r.log.Errorw("send new message", "err", err)
 	}
 }

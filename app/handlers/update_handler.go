@@ -55,13 +55,6 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 	r.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
 
-	// load "user" from db
-	// if not a command:
-	//   switch on the command saved to user
-	//   apply text to the command
-	// else
-	//   store command on the user
-
 	chat, err := r.chat.FirstOrCreate(ctx, msg.Chat)
 	if err != nil {
 		r.log.Errorw("load or create chat", "err", err)
@@ -99,6 +92,9 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 
 	case "stop":
 		chattable, err = r.commander.Stop(ctx, msg, args)
+
+	case "auth":
+		chattable, err = r.commander.Auth(ctx, msg, args)
 
 	default:
 		chattable = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")

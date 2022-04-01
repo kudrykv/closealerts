@@ -231,3 +231,24 @@ func (r Commander) ToggleArea(
 			NewEditMessageTextAndMarkup(cq.Message.Chat.ID, cq.Message.MessageID, text, *cq.Message.ReplyMarkup),
 		nil
 }
+
+func (r Commander) Auth(ctx context.Context, msg *tgbotapi.Message, args string) (tgbotapi.Chattable, error) {
+	split := strings.SplitN(args, ":", 2)
+	if len(split) != 2 {
+		return tgbotapi.NewMessage(msg.Chat.ID, "nopes"), nil
+	}
+
+	priv, passwd := split[0], split[1]
+	if passwd != "passwd" {
+		return tgbotapi.NewMessage(msg.Chat.ID, "nopes"), nil
+	}
+
+	switch priv {
+	case "send_fake_event":
+		if err := r.chat.Grant(ctx, msg.Chat.ID, "send_fake_event"); err != nil {
+			return tgbotapi.MessageConfig{}, fmt.Errorf("grant: %w", err)
+		}
+	}
+
+	return tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID), nil
+}

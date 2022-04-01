@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	types2 "closealerts/app/repositories/types"
 	"closealerts/app/services"
 	"closealerts/app/types"
 	"context"
@@ -45,12 +46,14 @@ func (r Alerts) Run(ctx context.Context) error {
 				return
 
 			case <-ticker.C:
-				alerts, err := r.alertSvc.GetActiveFromRemote(ctx)
-				if err != nil {
-					r.log.Errorw("get active alerts", "err", err)
+				//alerts, err := r.alertSvc.GetActiveFromRemote(ctx)
+				//if err != nil {
+				//	r.log.Errorw("get active alerts", "err", err)
+				//
+				//	break
+				//}
 
-					break
-				}
+				alerts := types2.Alerts{}
 
 				if err := r.alertSvc.ReplaceAlerts(ctx, alerts); err != nil {
 					r.log.Errorw("replace alerts", "err", err)
