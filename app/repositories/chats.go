@@ -50,7 +50,6 @@ func (r Chats) Grant(ctx context.Context, id int64, priv string) error {
 	case "send_broadcast":
 		col = "priv_broadcast"
 	default:
-		x
 		// silent noop
 		return nil
 	}
