@@ -122,6 +122,8 @@ func (r Notification) Unmark(ctx context.Context, alerts []types2.Alert) error {
 		return fmt.Errorf("unmark: %w", err)
 	}
 
+	r.log.Debugw("unmark areas where alert has ended")
+
 	return nil
 }
 
