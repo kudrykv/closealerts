@@ -73,7 +73,7 @@ func (r Notification) Eligible(ctx context.Context, alerts []types2.Alert) (type
 		areas = append(areas, alert.ID)
 	}
 
-	var notif []types2.Notification
+	var notif types2.Notifications
 
 	err := r.db.DB().WithContext(ctx).
 		Where("area in (?) and notified = false", areas).
@@ -83,6 +83,11 @@ func (r Notification) Eligible(ctx context.Context, alerts []types2.Alert) (type
 	if err != nil {
 		return nil, fmt.Errorf("eligible: %w", err)
 	}
+
+	r.log.Debugw(
+		"eligible",
+		"group", notif.GroupByChatID(),
+	)
 
 	return notif, nil
 }
