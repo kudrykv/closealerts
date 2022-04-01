@@ -84,10 +84,7 @@ func (r Notification) Eligible(ctx context.Context, alerts []types2.Alert) (type
 		return nil, fmt.Errorf("eligible: %w", err)
 	}
 
-	r.log.Debugw(
-		"eligible",
-		"group", notif.GroupByChatID(),
-	)
+	r.log.Debugw("eligible", "group", notif.GroupByChatID())
 
 	return notif, nil
 }
