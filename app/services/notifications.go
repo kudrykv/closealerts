@@ -6,7 +6,6 @@ import (
 	types2 "closealerts/app/repositories/types"
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -86,25 +85,23 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 	go func() {
 		sf := make(chan struct{}, 10)
 
-		for chatID, notifications := range eligible.GroupByChatID() {
+		for _, notification := range eligible {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(chatID int64, notifications types2.Notifications) {
+			go func(notification types2.Notification) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.log.Debugw("notify about alerts", "chat", chatID, "areas", notifications.Areas())
-				r.telegram.MaybeSendText(ctx, chatID, strings.Join(notifications.Areas(), ", ")+": тривога!")
+				r.log.Debugw("notify about alerts", "notification", notification)
+				r.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога!")
 
-				for _, notification := range notifications {
-					if err := r.notification.Notified(ctx, notification); err != nil {
-						r.log.Errorw("notified", "err", err)
-					}
+				if err := r.notification.Notified(ctx, notification); err != nil {
+					r.log.Errorw("notified", "err", err)
 				}
-			}(chatID, notifications)
+			}(notification)
 		}
 	}()
 
@@ -116,19 +113,19 @@ func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor 
 
 	go func() {
 		sf := make(chan struct{}, 10)
-		for chatID, notifications := range endedFor.GroupByChatID() {
+		for _, notification := range endedFor {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(chatID int64, notifications types2.Notifications) {
+			go func(notification types2.Notification) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.log.Debugw("notify about ended alerts", "chat", chatID, "areas", notifications.Areas())
-				r.telegram.MaybeSendText(ctx, chatID, "тривога минула: "+strings.Join(notifications.Areas(), ", "))
-			}(chatID, notifications)
+				r.log.Debugw("notify about ended alerts", "notification", notification)
+				r.telegram.MaybeSendText(ctx, notification.ChatID, "тривога минула: "+notification.Area)
+			}(notification)
 		}
 	}()
 
