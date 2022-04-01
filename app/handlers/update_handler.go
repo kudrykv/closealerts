@@ -99,6 +99,8 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 	case "admin_fake_alert_in":
 		if !chat.PrivSendFakeEvent {
 			chattable = tgbotapi.NewMessage(chat.ID, "Please auth first")
+
+			break
 		}
 
 		chattable, err = r.commander.AdminFakeAlertIn(ctx, msg, args)

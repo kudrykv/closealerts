@@ -3,6 +3,7 @@ package services
 import (
 	types2 "closealerts/app/repositories/types"
 	"context"
+	"errors"
 )
 
 type Fakes struct {
@@ -19,6 +20,7 @@ func (f Fakes) FakeAlert(_ context.Context, args string) error {
 	select {
 	case f.alerts <- types2.Alert{ID: args}:
 	default:
+		return errors.New("channel busy")
 	}
 
 	return nil
