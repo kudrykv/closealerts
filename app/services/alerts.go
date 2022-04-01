@@ -89,9 +89,7 @@ func (r Alerts) ukrzen(ctx context.Context) ([]types2.Alert, error) {
 //}
 
 func mkReqUnmarshal(ctx context.Context, url string, dst interface{}) error {
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodGet, "https://war-api.ukrzen.in.ua/alerts/api/v2/alerts/active.json", nil,
-	)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 
 	if err != nil {
 		return fmt.Errorf("new request with context: %w", err)
