@@ -71,6 +71,9 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 	var text string
 
 	switch command {
+	case "start":
+		text, err = r.commander.Start(ctx, chat, args)
+
 	case "track":
 		text, err = r.commander.Track(ctx, chat, args)
 

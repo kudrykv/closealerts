@@ -82,3 +82,12 @@ func (r Commander) Alerts(ctx context.Context, _ types2.Chat, _ string) (string,
 
 	return strings.Join(alerts.Areas(), ", "), nil
 }
+
+func (r Commander) Start(context.Context, types2.Chat, string) (string, error) {
+	return `Пильнуй сповіщення в сусідніх областях.
+
+Приклад, як створити сповіщення:
+/track Тернопільська
+
+Назва має повністю збігатись з тією, що на карті https://war.ukrzen.in.ua/alerts/`, nil
+}
