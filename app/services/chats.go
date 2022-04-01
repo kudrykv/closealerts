@@ -5,6 +5,8 @@ import (
 	types2 "closealerts/app/repositories/types"
 	"context"
 	"fmt"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Chats struct {
@@ -15,8 +17,10 @@ func NewChats(chats repositories.Chats) Chats {
 	return Chats{chat: chats}
 }
 
-func (r Chats) FirstOrCreate(ctx context.Context, id int64) (types2.Chat, error) {
-	chat, err := r.chat.CreateOrSelect(ctx, id)
+func (r Chats) FirstOrCreate(ctx context.Context, tgChat *tgbotapi.Chat) (types2.Chat, error) {
+	c := types2.Chat{ID: tgChat.ID, Username: tgChat.UserName}
+
+	chat, err := r.chat.CreateOrSelect(ctx, c)
 	if err != nil {
 		return types2.Chat{}, fmt.Errorf("create or select: %w", err)
 	}

@@ -15,8 +15,7 @@ func NewChats(db clients.DB) Chats {
 	return Chats{db: db}
 }
 
-func (r Chats) CreateOrSelect(ctx context.Context, id int64) (types2.Chat, error) {
-	chat := types2.Chat{ID: id}
+func (r Chats) CreateOrSelect(ctx context.Context, chat types2.Chat) (types2.Chat, error) {
 	if err := r.db.DB().WithContext(ctx).FirstOrCreate(&chat).Error; err != nil {
 		return types2.Chat{}, fmt.Errorf("first or create: %w", err)
 	}

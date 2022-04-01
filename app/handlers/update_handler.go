@@ -62,7 +62,7 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 	// else
 	//   store command on the user
 
-	chat, err := r.chat.FirstOrCreate(ctx, msg.Chat.ID)
+	chat, err := r.chat.FirstOrCreate(ctx, msg.Chat)
 	if err != nil {
 		r.log.Errorw("load or create chat", "err", err)
 
