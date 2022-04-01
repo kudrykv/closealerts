@@ -42,6 +42,8 @@ func (r Alerts) Run(ctx context.Context) error {
 		defer func() { ticker.Stop() }()
 
 		for {
+			//ctx, span := otel.Tracer("job.alerts").Start(ctx, "run")
+
 			select {
 			case <-ctx.Done():
 				close(r.done)
@@ -71,6 +73,8 @@ func (r Alerts) Run(ctx context.Context) error {
 					break
 				}
 			}
+
+			//span.End()
 		}
 	}()
 

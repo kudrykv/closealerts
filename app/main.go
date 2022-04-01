@@ -18,6 +18,8 @@ import (
 func main() {
 	app := fx.New(
 		fx.Provide(
+			//newResource,
+			//newExporter,
 			types.NewConfig,
 
 			clients.NewDBFromSQLite,
@@ -57,6 +59,48 @@ func main() {
 
 	app.Run()
 }
+
+//func newResource() (*resource.Resource, error) {
+//	r, err := resource.Merge(
+//		resource.Default(),
+//		resource.NewWithAttributes(
+//			semconv.SchemaURL,
+//			semconv.ServiceNameKey.String("closealerts"),
+//			semconv.ServiceVersionKey.String("v0.0.1"),
+//			attribute.String("environment", "localhost"),
+//		),
+//	)
+//	return r, err
+//}
+//
+//func newExporter(w io.Writer) (trace.SpanExporter, error) {
+//	return stdouttrace.New(
+//		stdouttrace.WithWriter(w),
+//		// Use human-readable output.
+//		stdouttrace.WithPrettyPrint(),
+//		// Do not print timestamps for the demo.
+//		stdouttrace.WithoutTimestamps(),
+//	)
+//}
+//
+//func newTraceTxtFile(lc fx.Lifecycle) (io.Writer, error) {
+//	file, err := os.Create("traces.txt")
+//	if err != nil {
+//		return nil, fmt.Errorf("create: %w", err)
+//	}
+//
+//	lc.Append(fx.Hook{
+//		OnStop: func(ctx context.Context) error {
+//			if err := file.Close(); err != nil {
+//				return fmt.Errorf("close: %w", err)
+//			}
+//
+//			return nil
+//		},
+//	})
+//
+//	return file, nil
+//}
 
 func migrate(db clients.DB) error {
 	err := db.AutoMigrate(
