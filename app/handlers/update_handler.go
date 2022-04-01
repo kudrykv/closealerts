@@ -69,33 +69,33 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		clearCmd = false
 	}
 
-	var text tgbotapi.Chattable
+	var chattable tgbotapi.Chattable
 
 	switch command {
 	case "start":
-		text, err = r.commander.Start(ctx, chat, args)
+		chattable, err = r.commander.Start(ctx, chat, args)
 
 	case "track":
-		text, err = r.commander.Track(ctx, chat, args)
+		chattable, err = r.commander.Track(ctx, chat, args)
 
 	case "tracking":
-		text, err = r.commander.Tracking(ctx, chat, args)
+		chattable, err = r.commander.Tracking(ctx, chat, args)
 
 	case "stop":
-		text, err = r.commander.Stop(ctx, chat, args)
+		chattable, err = r.commander.Stop(ctx, chat, args)
 
 	case "alerts":
-		text, err = r.commander.Alerts(ctx, chat, args)
+		chattable, err = r.commander.Alerts(ctx, chat, args)
 
 	default:
-		text = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")
+		chattable = tgbotapi.NewMessage(chat.ID, "я такої команди не знаю")
 	}
 
 	if err != nil {
 		r.log.Errorw("track", "err", err)
 		r.bot.MaybeSendText(ctx, chat.ID, "в мене щось пішло не так, спробуй ще раз")
 	} else {
-		r.bot.MaybeSend(ctx, text)
+		r.bot.MaybeSend(ctx, chattable)
 	}
 
 	if clearCmd {
