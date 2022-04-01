@@ -23,30 +23,33 @@ func NewAlerts(log *zap.SugaredLogger, alerts repositories.Alerts) Alerts {
 }
 
 func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error) {
-	list, err := r.ukrzen(ctx)
-	if err != nil {
-		r.log.Errorw("active alerts", "source", "ukrzen", "err", err)
-	} else {
-		r.log.Infow("active alerts", "source", "ukrzen")
-
-		return list, nil
+	sources := []struct {
+		fn     func(context.Context) (types2.Alerts, error)
+		source string
+	}{
+		{fn: r.ukrzen, source: "ukrzen"},
+		{fn: r.vadimklimenko, source: "vadimklimenko"},
+		{fn: r.alarmmap, source: "alarmmap"},
 	}
 
-	list, err = r.vadimklimenko(ctx)
-	if err != nil {
-		r.log.Errorw("active alerts", "source", "ukrzen", "err", err)
-	} else {
-		r.log.Infow("active alerts", "source", "vadimklimenko")
+	var (
+		list types2.Alerts
+		err  error
+	)
 
-		return list, nil
+	for _, source := range sources {
+		if list, err = source.fn(ctx); err != nil {
+			r.log.Errorw("active alerts", "source", source.source, "err", err)
+		} else {
+			r.log.Infow("active alerts", "source", source.source)
+
+			break
+		}
 	}
 
-	list, err = r.alarmmap(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("alarmmap: %w", err)
+		return nil, fmt.Errorf("active alerts: %w", err)
 	}
-
-	r.log.Infow("active alerts", "source", "alarmmap")
 
 	return list, nil
 }
@@ -79,7 +82,7 @@ type AlertsResponse struct {
 	Alerts []Alert
 }
 
-func (r Alerts) ukrzen(ctx context.Context) ([]types2.Alert, error) {
+func (r Alerts) ukrzen(ctx context.Context) (types2.Alerts, error) {
 	var (
 		resp AlertsResponse
 		err  error
@@ -110,7 +113,7 @@ type AlarmMapResponseItem struct {
 	District string `json:"district"`
 }
 
-func (r Alerts) alarmmap(ctx context.Context) ([]types2.Alert, error) {
+func (r Alerts) alarmmap(ctx context.Context) (types2.Alerts, error) {
 	var (
 		resp []AlarmMapResponseItem
 		err  error
