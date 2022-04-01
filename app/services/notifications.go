@@ -86,24 +86,24 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 	go func() {
 		sf := make(chan struct{}, 10)
 
-		for _, notifications := range eligible.GroupByChatID() {
+		for chatID, notifications := range eligible.GroupByChatID() {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(notifications types2.Notifications) {
+			go func(chatID int64, notifications types2.Notifications) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.telegram.MaybeSendText(ctx, notifications[0].ChatID, strings.Join(notifications.Areas(), ", ")+": тривога!")
+				r.telegram.MaybeSendText(ctx, chatID, strings.Join(notifications.Areas(), ", ")+": тривога!")
 
 				for _, notification := range notifications {
 					if err := r.notification.Notified(ctx, notification); err != nil {
 						r.log.Errorw("notified", "err", err)
 					}
 				}
-			}(notifications)
+			}(chatID, notifications)
 		}
 	}()
 
@@ -115,18 +115,18 @@ func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor 
 
 	go func() {
 		sf := make(chan struct{}, 10)
-		for _, notifications := range endedFor.GroupByChatID() {
+		for chatID, notifications := range endedFor.GroupByChatID() {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(notifications types2.Notifications) {
+			go func(chatID int64, notifications types2.Notifications) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.telegram.MaybeSendText(ctx, notifications[0].ChatID, "тривога минула: "+strings.Join(notifications.Areas(), ", "))
-			}(notifications)
+				r.telegram.MaybeSendText(ctx, chatID, "тривога минула: "+strings.Join(notifications.Areas(), ", "))
+			}(chatID, notifications)
 		}
 	}()
 
