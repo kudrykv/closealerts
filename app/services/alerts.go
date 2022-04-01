@@ -27,6 +27,17 @@ func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error)
 	if err != nil {
 		r.log.Errorw("active alerts", "source", "ukrzen", "err", err)
 	} else {
+		r.log.Infow("active alerts", "source", "ukrzen")
+
+		return list, nil
+	}
+
+	list, err = r.vadimklimenko(ctx)
+	if err != nil {
+		r.log.Errorw("active alerts", "source", "ukrzen", "err", err)
+	} else {
+		r.log.Infow("active alerts", "source", "vadimklimenko")
+
 		return list, nil
 	}
 
@@ -34,6 +45,8 @@ func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error)
 	if err != nil {
 		return nil, fmt.Errorf("alarmmap: %w", err)
 	}
+
+	r.log.Infow("active alerts", "source", "alarmmap")
 
 	return list, nil
 }
@@ -150,4 +163,56 @@ func mkReqUnmarshal(ctx context.Context, url string, dst interface{}) error {
 	}
 
 	return nil
+}
+
+type VadimResponse struct {
+	States  map[string]VadimArea `json:"states"`
+	Enabled bool                 `json:"enabled"`
+}
+
+type VadimArea struct {
+	Enabled   bool                   `json:"enabled"`
+	Type      string                 `json:"type:"`
+	Districts map[string]VadimRegion `json:"districts"`
+}
+
+type VadimRegion struct {
+	Enabled bool   `json:"enabled"`
+	Type    string `json:"type"`
+}
+
+func (r Alerts) vadimklimenko(ctx context.Context) (types2.Alerts, error) {
+	var (
+		resp VadimResponse
+		err  error
+	)
+
+	if err = mkReqUnmarshal(ctx, "https://emapa.fra1.cdn.digitaloceanspaces.com/statuses.json", &resp); err != nil {
+		return nil, fmt.Errorf("mk req: %w", err)
+	}
+
+	var list types2.Alerts
+
+	for state, data := range resp.States {
+		area := strings.SplitN(state, " ", 2)[0]
+		if state == "м. Київ" {
+			area = "м. Київ"
+		}
+
+		if data.Enabled {
+			list = append(list, types2.Alert{ID: area, Type: "o"})
+		}
+
+		for region, data := range data.Districts {
+			area := strings.SplitN(region, " ", 2)[0]
+
+			if data.Enabled {
+				list = append(list, types2.Alert{ID: area, Type: "r"})
+			}
+		}
+	}
+
+	r.log.Infow("active from remote", "list", list)
+
+	return list, nil
 }
