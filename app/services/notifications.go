@@ -56,15 +56,12 @@ func (r Notification) Stop(ctx context.Context, id int64, area string) error {
 }
 
 func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
-	// 1. select ones who needs to be notified
-	// 2. notify those
-	// 3. mark notified
-	// 4. unmark ones who doesn't match alerts
-
 	eligible, err := r.notification.Eligible(ctx, alerts)
 	if err != nil {
 		return fmt.Errorf("eligible: %w", err)
 	}
+
+	r.log.Infow("notify about new alerts", "by_chat_id", eligible.GroupByChatID())
 
 	alertsWg := r.notifyAboutAlertsAsync(ctx, eligible)
 
@@ -73,11 +70,15 @@ func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 		return fmt.Errorf("alert ended: %w", err)
 	}
 
+	r.log.Infow("notify about ended alerts", "by_chat_id", endedFor.GroupByChatID())
+
 	endedAlertsWg := r.notifyAboutEndedAlertsAsync(ctx, endedFor)
 
 	if err := r.notification.Unmark(ctx, alerts); err != nil {
 		return fmt.Errorf("unmark: %w", err)
 	}
+
+	r.log.Info("unmarked alerts")
 
 	alertsWg.Wait()
 	endedAlertsWg.Wait()
@@ -125,10 +126,6 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 
 func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor types2.Notifications) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
-
-	if len(endedFor) == 0 {
-		return wg
-	}
 
 	go func() {
 		sf := make(chan struct{}, 10)

@@ -63,7 +63,7 @@ func (n Notification) Stop(ctx context.Context, id int64, area string) error {
 	return nil
 }
 
-func (n Notification) Eligible(ctx context.Context, alerts []types2.Alert) ([]types2.Notification, error) {
+func (n Notification) Eligible(ctx context.Context, alerts []types2.Alert) (types2.Notifications, error) {
 	if len(alerts) == 0 {
 		return nil, nil
 	}

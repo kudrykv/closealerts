@@ -52,20 +52,24 @@ func (r Alerts) Run(ctx context.Context) error {
 					break
 				}
 
+				r.log.Infow("got alerts from remote", "alerts", alerts)
+
 				if err := r.alertSvc.ReplaceAlerts(ctx, alerts); err != nil {
 					r.log.Errorw("replace alerts", "err", err)
 
 					break
 				}
 
+				r.log.Info("replaced alerts with current")
+
 				if err := r.notification.Notify(ctx, alerts); err != nil {
 					r.log.Errorw("notify", "err", err)
 
 					break
 				}
-			}
 
-			r.log.Debug("alerts tick")
+				r.log.Infow("notified whoever had to be notified")
+			}
 		}
 	}()
 
