@@ -25,7 +25,7 @@ func NewTelegram(log *zap.SugaredLogger, config types.Config) (Telegram, error) 
 		return Telegram{}, fmt.Errorf("new bot api: %w", err)
 	}
 
-	api.Debug = true
+	api.Debug = config.DebugTelegram
 
 	return Telegram{
 		log:    log,

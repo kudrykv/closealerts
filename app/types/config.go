@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Config struct {
 	Updates        chan Update
 	Cert           string
 	Key            string
+	DebugTelegram  bool
 }
 
 func NewConfig() (Config, error) {
@@ -28,6 +30,8 @@ func NewConfig() (Config, error) {
 		addr = tmp
 	}
 
+	debugTelegram := strings.ToLower(os.Getenv("DEBUG_TELEGRAM")) == "true"
+
 	return Config{
 		SQLite3DBPath:  os.Getenv("SQLITE3_DB_PATH"),
 		TickInterval:   tick,
@@ -37,5 +41,6 @@ func NewConfig() (Config, error) {
 		Updates:        make(chan Update, 1000),
 		Cert:           os.Getenv("SERVER_CERT"),
 		Key:            os.Getenv("SERVER_KEY"),
+		DebugTelegram:  debugTelegram,
 	}, nil
 }
