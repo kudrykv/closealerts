@@ -44,11 +44,6 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 
 	r.log.Infow("msg", "user", msg.Chat.UserName, "text", msg.Text)
 
-	var (
-		text string
-		err  error
-	)
-
 	// load "user" from db
 	// if not a command:
 	//   switch on the command saved to user
@@ -72,6 +67,8 @@ func (r UpdateHandler) Handle(ctx context.Context, update types.Update) {
 		args = msg.CommandArguments()
 		clearCmd = false
 	}
+
+	var text string
 
 	switch command {
 	case "track":
