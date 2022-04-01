@@ -50,6 +50,7 @@ func main() {
 			server.RegisterListeningWebhooks,
 			server.RegisterServer,
 			clients.RegisterTelegram,
+			clients.RegisterTelegramCommands,
 		),
 	)
 

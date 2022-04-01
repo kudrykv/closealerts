@@ -46,6 +46,53 @@ func RegisterTelegram(lc fx.Lifecycle, config types.Config, bot Telegram) {
 	})
 }
 
+func RegisterTelegramCommands(log *zap.SugaredLogger, bot Telegram) error {
+	commands := tgbotapi.NewSetMyCommands(
+		tgbotapi.BotCommand{
+			Command:     "start",
+			Description: "Коротко про те, як працює бот.",
+		},
+
+		tgbotapi.BotCommand{
+			Command:     "areas",
+			Description: "Список відслідковуваних областей, разом з налаштуванням",
+		},
+
+		tgbotapi.BotCommand{
+			Command:     "alerts",
+			Description: "Місця, де оголошена тривога",
+		},
+
+		tgbotapi.BotCommand{
+			Command:     "track",
+			Description: "Створити сповіщення на конкретну територію. Назва має збігатись з назвою в карті",
+		},
+
+		tgbotapi.BotCommand{
+			Command:     "tracking",
+			Description: "Список відслідковуваних місць",
+		},
+
+		tgbotapi.BotCommand{
+			Command:     "stop",
+			Description: "Відписатись від відслідковуваного місця",
+		},
+	)
+
+	resp, err := bot.Client.Request(commands)
+	if err != nil {
+		log.Errorw("set commands", "err", err)
+	} else {
+		log.Infow(
+			"set commands",
+			"ok", resp.Ok,
+			"desc", resp.Description,
+		)
+	}
+
+	return nil
+}
+
 func (r Telegram) SetupWebhookEndpoint(pattern string, cert string) error {
 	var (
 		wh  tgbotapi.WebhookConfig
