@@ -54,42 +54,63 @@ type AlertsResponse struct {
 }
 
 func (r Alerts) ukrzen(ctx context.Context) ([]types2.Alert, error) {
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodGet, "https://war-api.ukrzen.in.ua/alerts/api/v2/alerts/active.json", nil,
+	var (
+		resp AlertsResponse
+		err  error
 	)
 
-	if err != nil {
-		return nil, fmt.Errorf("new request with context: %w", err)
+	if err = mkReqUnmarshal(ctx, "https://war-api.ukrzen.in.ua/alerts/api/v2/alerts/active.json", &resp); err != nil {
+		return nil, fmt.Errorf("mk req: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("do: %w", err)
-	}
-
-	bts, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("io read all: %w", err)
-	}
-
-	var out AlertsResponse
-	if err := json.Unmarshal(bts, &out); err != nil {
-		return nil, fmt.Errorf("json unmarshal: %w", err)
-	}
-
-	if len(out.Alerts) == 0 {
+	if len(resp.Alerts) == 0 {
 		r.log.Info("no active alerts")
 
 		return nil, nil
 	}
 
-	list := make([]types2.Alert, 0, len(out.Alerts))
+	list := make([]types2.Alert, 0, len(resp.Alerts))
 
-	for _, alert := range out.Alerts {
+	for _, alert := range resp.Alerts {
 		list = append(list, types2.Alert{ID: alert.Area, Type: alert.Type})
 	}
 
 	r.log.Infow("active from remote", "list", list)
 
 	return list, nil
+}
+
+//func (r Alerts) alarmmap(ctx context.Context) ([]types2.Alert, error) {
+//	var (
+//		list types2.Alerts
+//		err  error
+//	)
+//
+//}
+
+func mkReqUnmarshal(ctx context.Context, url string, dst interface{}) error {
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodGet, "https://war-api.ukrzen.in.ua/alerts/api/v2/alerts/active.json", nil,
+	)
+
+	if err != nil {
+		return fmt.Errorf("new request with context: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("do: %w", err)
+	}
+
+	bts, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("io read all: %w", err)
+	}
+	_ = resp.Body.Close()
+
+	if err := json.Unmarshal(bts, dst); err != nil {
+		return fmt.Errorf("json unmarshal: %w", err)
+	}
+
+	return nil
 }
