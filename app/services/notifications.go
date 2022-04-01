@@ -6,6 +6,7 @@ import (
 	types2 "closealerts/app/repositories/types"
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -84,52 +85,61 @@ func (r Notification) Notify(ctx context.Context, alerts []types2.Alert) error {
 	return nil
 }
 
-func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible []types2.Notification) *sync.WaitGroup {
+func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types2.Notifications) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 
 	go func() {
-		sf := make(chan struct{}, 4)
+		sf := make(chan struct{}, 10)
 
-		for _, notification := range eligible {
+		for _, notifications := range eligible.GroupByChatID() {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(notification types2.Notification) {
+			go func(notifications types2.Notifications) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога!")
-
-				if err := r.notification.Notified(ctx, notification); err != nil {
-					r.log.Errorw("notified", "err", err)
+				if notifications[0].ChatID < 0 {
+					return
 				}
-			}(notification)
+
+				r.telegram.MaybeSendText(ctx, notifications[0].ChatID, strings.Join(notifications.Areas(), ", ")+": тривога!")
+
+				for _, notification := range notifications {
+					if err := r.notification.Notified(ctx, notification); err != nil {
+						r.log.Errorw("notified", "err", err)
+					}
+				}
+			}(notifications)
 		}
 	}()
 
 	return wg
 }
 
-func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor []types2.Notification) *sync.WaitGroup {
+func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor types2.Notifications) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
 
 	go func() {
-		sf := make(chan struct{}, 4)
-
-		for _, notification := range endedFor {
+		sf := make(chan struct{}, 10)
+		for _, notifications := range endedFor.GroupByChatID() {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(notification types2.Notification) {
+			go func(notifications types2.Notifications) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога минула")
-			}(notification)
+				if notifications[0].ChatID < 0 {
+					return
+				}
+
+				r.telegram.MaybeSendText(ctx, notifications[0].ChatID, "тривога минула: "+strings.Join(notifications.Areas(), ", "))
+			}(notifications)
 		}
 	}()
 

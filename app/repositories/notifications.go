@@ -69,7 +69,11 @@ func (n Notification) Eligible(ctx context.Context, alerts []types2.Alert) ([]ty
 
 	var notif []types2.Notification
 
-	err := n.db.DB().WithContext(ctx).Where("area in (?) and notified = false", areas).Find(&notif).Error
+	err := n.db.DB().WithContext(ctx).
+		Where("area in (?) and notified = false", areas).
+		Order("chat_id").
+		Find(&notif).
+		Error
 	if err != nil {
 		return nil, fmt.Errorf("eligible: %w", err)
 	}
@@ -98,28 +102,38 @@ func (n Notification) Unmark(ctx context.Context, alerts []types2.Alert) error {
 		areas = append(areas, alert.ID)
 	}
 
-	err := n.db.DB().
-		WithContext(ctx).
-		Model(&types2.Notification{}).
-		Where("area not in (?)", areas).
-		UpdateColumn("notified", false).
-		Error
-	if err != nil {
+	tx := n.db.DB().WithContext(ctx).Model(&types2.Notification{})
+
+	if len(areas) > 0 {
+		tx = tx.Where("area not in (?)", areas)
+	} else {
+		tx = tx.Where("1 = 1")
+	}
+
+	if err := tx.UpdateColumn("notified", false).Error; err != nil {
 		return fmt.Errorf("unmark: %w", err)
 	}
 
 	return nil
 }
 
-func (n Notification) AlertEnded(ctx context.Context, alerts []types2.Alert) ([]types2.Notification, error) {
+func (n Notification) AlertEnded(ctx context.Context, alerts []types2.Alert) (types2.Notifications, error) {
 	areas := make([]string, 0, len(alerts))
 	for _, alert := range alerts {
 		areas = append(areas, alert.ID)
 	}
 
-	var endedFor []types2.Notification
+	var (
+		endedFor types2.Notifications
+		err      error
+	)
 
-	err := n.db.DB().WithContext(ctx).Where("area not in (?) and notified = true", areas).Find(&endedFor).Error
+	if len(alerts) == 0 {
+		err = n.db.DB().WithContext(ctx).Where("notified = true").Find(&endedFor).Error
+	} else {
+		err = n.db.DB().WithContext(ctx).Where("area not in (?) and notified = true", areas).Find(&endedFor).Error
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("alert ended: %w", err)
 	}
