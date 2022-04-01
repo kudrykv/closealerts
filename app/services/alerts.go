@@ -46,6 +46,8 @@ func (r Alerts) GetActiveFromRemote(ctx context.Context) ([]types2.Alert, error)
 	}
 
 	if len(out.Alerts) == 0 {
+		r.log.Info("no active alerts")
+
 		return nil, nil
 	}
 
