@@ -109,9 +109,11 @@ func (r Commander) Start(_ context.Context, msg *tgbotapi.Message, _ string) (tg
 /areas
 І далі наклацати області, які цікавлять.
 
-Можна власноруч ще встановлювати регіони:
-/track Чортківський
-Назва має повністю збігатись з тією, що на карті https://war.ukrzen.in.ua/alerts/`,
+Дані беруться з карт:
+- https://war.ukrzen.in.ua/alerts/
+- https://vadimklimenko.com/map/
+- https://alarmmap.online/
+`,
 	), nil
 }
 
