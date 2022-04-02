@@ -85,23 +85,25 @@ func (r Notification) notifyAboutAlertsAsync(ctx context.Context, eligible types
 	go func() {
 		sf := make(chan struct{}, 10)
 
-		for _, notification := range eligible {
+		for chatID, notifications := range eligible.GroupByChatID() {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(notification types2.Notification) {
+			go func(chatID int64, notifications types2.Notifications) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.log.Debugw("notify about alerts", "notification", notification)
-				r.telegram.MaybeSendText(ctx, notification.ChatID, notification.Area+": тривога!")
+				r.log.Debugw("notify about alerts", "chat_id", chatID, "areas", notifications.Areas())
+				r.telegram.MaybeSendText(ctx, chatID, notifications.Areas().Join(", ")+": тривога!")
 
-				if err := r.notification.Notified(ctx, notification); err != nil {
-					r.log.Errorw("notified", "err", err)
+				for _, notification := range notifications {
+					if err := r.notification.Notified(ctx, notification); err != nil {
+						r.log.Errorw("notified", "err", err)
+					}
 				}
-			}(notification)
+			}(chatID, notifications)
 		}
 	}()
 
@@ -113,19 +115,19 @@ func (r Notification) notifyAboutEndedAlertsAsync(ctx context.Context, endedFor 
 
 	go func() {
 		sf := make(chan struct{}, 10)
-		for _, notification := range endedFor {
+		for chatID, notifications := range endedFor.GroupByChatID() {
 			sf <- struct{}{}
 			wg.Add(1)
 
-			go func(notification types2.Notification) {
+			go func(chatID int64, notifications types2.Notifications) {
 				defer func() {
 					<-sf
 					wg.Done()
 				}()
 
-				r.log.Debugw("notify about ended alerts", "notification", notification)
-				r.telegram.MaybeSendText(ctx, notification.ChatID, "тривога минула: "+notification.Area)
-			}(notification)
+				r.log.Debugw("notify about ended alerts", "chat_id", chatID, "areas", notifications.Areas())
+				r.telegram.MaybeSendText(ctx, chatID, "відбій: "+notifications.Areas().Join(", "))
+			}(chatID, notifications)
 		}
 	}()
 
