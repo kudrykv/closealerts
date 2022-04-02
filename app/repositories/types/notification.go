@@ -48,7 +48,7 @@ func (r Notifications) GroupByChatID() map[int64]Notifications {
 		}
 
 		out[ptrChatID] = cp[start:end]
-		start = end
+		start, end = end, end+1
 		ptrChatID = notification.ChatID
 	}
 
