@@ -138,7 +138,7 @@ func (r Maps) Paint(bts []byte, alerts types2.Alerts) ([]byte, error) {
 		for _, row := range table {
 			regex, err := regexp.Compile(row.expr)
 			if err != nil {
-				return nil, fmt.Errorf("regexp compile: %w", err)
+				return nil, fmt.Errorf("regexp compile `%s`: %w", row.expr, err)
 			}
 
 			bts = regex.ReplaceAll(bts, []byte(row.replace))
