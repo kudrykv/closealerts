@@ -1,5 +1,7 @@
 package types
 
+import "closealerts/app/types"
+
 type Alert struct {
 	ID   string `gorm:"column:id"`
 	Type string `gorm:"column:type"`
@@ -7,7 +9,7 @@ type Alert struct {
 
 type Alerts []Alert
 
-func (r Alerts) Areas() []string {
+func (r Alerts) Areas() types.Stringies {
 	if len(r) == 0 {
 		return nil
 	}

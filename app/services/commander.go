@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ type Commander struct {
 	alert        Alerts
 	fake         Fakes
 	telegram     clients.Telegram
+	mapz         Maps
 }
 
 func NewCommander(
@@ -28,6 +30,7 @@ func NewCommander(
 	notification Notification,
 	alert Alerts,
 	fake Fakes,
+	mapz Maps,
 ) Commander {
 	return Commander{
 		telegram:     tg,
@@ -35,6 +38,7 @@ func NewCommander(
 		notification: notification,
 		alert:        alert,
 		fake:         fake,
+		mapz:         mapz,
 	}
 }
 
@@ -316,4 +320,41 @@ func (r Commander) Broadcast(ctx context.Context, msg *tgbotapi.Message, args st
 	}
 
 	return tgbotapi.NewMessage(msg.Chat.ID, "що будемо броадкастити?"), nil
+}
+
+func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tgbotapi.Chattable, error) {
+	alerts, err := r.alert.GetActive(ctx)
+	if err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("get active alerts: %w", err)
+	}
+
+	instant, mapz, bts, err := r.mapz.Get(ctx, alerts)
+	if err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("get map: %w", err)
+	}
+
+	if instant {
+		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
+	}
+
+	r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
+
+	fileData := tgbotapi.FileBytes{Name: "map.png", Bytes: bts}
+
+	photoMsg, err := r.telegram.Send(ctx, tgbotapi.NewPhoto(msg.Chat.ID, fileData))
+	if err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("telegram send: %w", err)
+	}
+
+	if len(photoMsg.Photo) == 0 {
+		return tgbotapi.MessageConfig{}, errors.New("no photos in response")
+	}
+
+	sort.Slice(photoMsg.Photo, func(i, j int) bool { return photoMsg.Photo[i].FileSize > photoMsg.Photo[j].FileSize })
+
+	if _, err := r.mapz.Save(ctx, alerts, photoMsg.Photo[0].FileID); err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("mapz save: %w", err)
+	}
+
+	return tgbotapi.NewMessage(msg.Chat.ID, ""), nil
 }

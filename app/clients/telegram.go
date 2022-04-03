@@ -131,3 +131,14 @@ func (r Telegram) MaybeSendText(_ context.Context, chatID int64, msg string) {
 		r.log.Errorw("send new message", "err", err)
 	}
 }
+
+func (r Telegram) Send(_ context.Context, chattable tgbotapi.Chattable) (tgbotapi.Message, error) {
+	r.rl.Take()
+
+	msg, err := r.Client.Send(chattable)
+	if err != nil {
+		return msg, fmt.Errorf("send: %w", err)
+	}
+
+	return msg, nil
+}

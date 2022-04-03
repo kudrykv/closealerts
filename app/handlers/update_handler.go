@@ -93,6 +93,9 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 	case "stop":
 		chattable, err = r.commander.Stop(ctx, msg, args)
 
+	case "map":
+		chattable, err = r.commander.Map(ctx, msg, args)
+
 	case "auth":
 		chattable, err = r.commander.Auth(ctx, msg, args)
 

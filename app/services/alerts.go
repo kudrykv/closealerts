@@ -219,3 +219,27 @@ func (r Alerts) vadimklimenko(ctx context.Context) (types2.Alerts, error) {
 
 	return list, nil
 }
+
+func (r Alerts) GetMapSVGBytes(ctx context.Context) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://war.ukrzen.in.ua/alerts/map.svg", nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("new request with context: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("do: %w", err)
+	}
+
+	bts, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("io read all: %w", err)
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return nil, fmt.Errorf("resp body close: %w", err)
+	}
+
+	return bts, nil
+}
