@@ -125,33 +125,24 @@ func (r Maps) Paint(bts []byte, alerts types2.Alerts) ([]byte, error) {
 	}
 
 	for _, alert := range alerts {
-		regex, err := regexp.Compile(`(<[^>]+fill=)"[^"]+"([^>]+data-oblast="` + alert.ID + ")")
-		if err != nil {
-			return nil, fmt.Errorf("regexp compile: %w", err)
+		table := []struct {
+			expr    string
+			replace string
+		}{
+			{expr: `(<[^>]+fill=)"[^"]+"([^>]+data-oblast="` + alert.ID + ")", replace: `$1"rgba(230,25,25,1)"$2`},
+			{expr: `(<[^>]+data-oblast="` + alert.ID + `[^>]+fill=)"[^"]+"`, replace: `$1"rgba(230,25,25,1)"`},
+			{expr: `(<[^>]+fill-opacity=)"[^"]+"([^>]+data-oblast="` + alert.ID + `)`, replace: `$1"0.4"$2`},
+			{expr: `(<[^>]+data-oblast="` + alert.ID + `[^>]+fill-opacity=)"[^"]+"`, replace: `$1"0.4"`},
 		}
 
-		bts = regex.ReplaceAll(bts, []byte(`$1"rgba(230,25,25,1)"$2`))
+		for _, row := range table {
+			regex, err := regexp.Compile(row.expr)
+			if err != nil {
+				return nil, fmt.Errorf("regexp compile: %w", err)
+			}
 
-		regex, err = regexp.Compile(`(<[^>]+data-oblast="` + alert.ID + `[^>]+fill=)"[^"]+"`)
-		if err != nil {
-			return nil, fmt.Errorf("regexp compile: %w", err)
+			bts = regex.ReplaceAll(bts, []byte(row.replace))
 		}
-
-		bts = regex.ReplaceAll(bts, []byte(`$1"rgba(230,25,25,1)"`))
-
-		regex, err = regexp.Compile(`(<[^>]+fill-opacity=)"[^"]+"([^>]+data-oblast="` + alert.ID + `)`)
-		if err != nil {
-			return nil, fmt.Errorf("regexp compile: %w", err)
-		}
-
-		bts = regex.ReplaceAll(bts, []byte(`$1"0.4"$2`))
-
-		regex, err = regexp.Compile(`(<[^>]+data-oblast="` + alert.ID + `[^>]+fill-opacity=)"[^"]+"`)
-		if err != nil {
-			return nil, fmt.Errorf("regexp compile: %w", err)
-		}
-
-		bts = regex.ReplaceAll(bts, []byte(`$1"0.4"`))
 	}
 
 	return bts, nil
