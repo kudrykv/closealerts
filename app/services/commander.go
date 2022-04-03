@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/sync/singleflight"
@@ -340,7 +341,31 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
 
-	val, err, shared := r.sf.Do(alerts.Areas().Sort().Join(","), r.getMapLong(ctx, msg.Chat.ID, alerts))
+	var (
+		val    interface{}
+		shared bool
+		done   = make(chan struct{})
+		ticker = time.NewTicker(4_500 * time.Millisecond)
+	)
+
+	go func() {
+		val, err, shared = r.sf.Do(alerts.Areas().Sort().Join(","), r.getMapLong(ctx, msg.Chat.ID, alerts))
+		close(done)
+	}()
+
+	r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
+
+loop:
+	for {
+		select {
+		case <-done:
+			ticker.Stop()
+			break loop
+
+		case <-ticker.C:
+			r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
+		}
+	}
 
 	if err != nil {
 		return tgbotapi.MessageConfig{}, fmt.Errorf("singleflight shared %t: %w", shared, err)
@@ -355,8 +380,6 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 
 func (r Commander) getMapLong(ctx context.Context, chatID int64, alerts types2.Alerts) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(chatID, "upload_photo"))
-
 		instant, mapz, bts, err := r.mapz.Get(ctx, alerts)
 		if err != nil {
 			return nil, fmt.Errorf("get map: %w", err)
