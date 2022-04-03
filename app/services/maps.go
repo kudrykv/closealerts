@@ -11,12 +11,10 @@ import (
 	"os/exec"
 
 	"go.uber.org/zap"
-	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
 
 type Maps struct {
-	sf    *singleflight.Group
 	mapz  repositories.Maps
 	log   *zap.SugaredLogger
 	alert Alerts
@@ -29,7 +27,6 @@ func NewMaps(
 ) Maps {
 	return Maps{
 		log:   log,
-		sf:    &singleflight.Group{},
 		mapz:  mapz,
 		alert: alert,
 	}
@@ -39,13 +36,13 @@ func (r Maps) Get(ctx context.Context, alerts types2.Alerts) (bool, types2.Map, 
 	areas := alerts.Areas().Sort()
 	alertsKey := areas.Join(",")
 
-	mapz, err := r.mapz.Get(ctx, alertsKey)
-	if err == nil {
-		return true, mapz, nil, nil
+	mapz, ok, err := r.Exists(ctx, alerts)
+	if err != nil {
+		return false, mapz, nil, fmt.Errorf("exists: %w", err)
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, mapz, nil, fmt.Errorf("get map: %w", err)
+	if ok {
+		return true, mapz, nil, nil
 	}
 
 	r.log.Infow("no map for given alerts set yet", "areas", areas)
@@ -101,4 +98,20 @@ func (r Maps) Save(ctx context.Context, alerts types2.Alerts, fileID string) (ty
 	}
 
 	return mapz, nil
+}
+
+func (r Maps) Exists(ctx context.Context, alerts types2.Alerts) (types2.Map, bool, error) {
+	areas := alerts.Areas().Sort()
+	alertsKey := areas.Join(",")
+
+	mapz, err := r.mapz.Get(ctx, alertsKey)
+	if err == nil {
+		return mapz, true, nil
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return mapz, false, nil
+	}
+
+	return mapz, false, fmt.Errorf("mapz get: %w", err)
 }

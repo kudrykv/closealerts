@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"golang.org/x/sync/singleflight"
 )
 
 type Commander struct {
@@ -22,6 +23,7 @@ type Commander struct {
 	fake         Fakes
 	telegram     clients.Telegram
 	mapz         Maps
+	sf           *singleflight.Group
 }
 
 func NewCommander(
@@ -39,6 +41,7 @@ func NewCommander(
 		alert:        alert,
 		fake:         fake,
 		mapz:         mapz,
+		sf:           &singleflight.Group{},
 	}
 }
 
@@ -328,32 +331,53 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 		return tgbotapi.MessageConfig{}, fmt.Errorf("get active alerts: %w", err)
 	}
 
-	instant, mapz, bts, err := r.mapz.Get(ctx, alerts)
+	mapz, ok, err := r.mapz.Exists(ctx, alerts)
 	if err != nil {
-		return tgbotapi.MessageConfig{}, fmt.Errorf("get map: %w", err)
+		return tgbotapi.MessageConfig{}, fmt.Errorf("mapz exists: %w", err)
 	}
 
-	if instant {
+	if ok {
 		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
 
-	r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
+	val, err, shared := r.sf.Do(alerts.Areas().Sort().Join(","), func() (interface{}, error) {
+		r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
 
-	fileData := tgbotapi.FileBytes{Name: "map.png", Bytes: bts}
+		instant, mapz, bts, err := r.mapz.Get(ctx, alerts)
+		if err != nil {
+			return nil, fmt.Errorf("get map: %w", err)
+		}
 
-	photoMsg, err := r.telegram.Send(ctx, tgbotapi.NewPhoto(msg.Chat.ID, fileData))
+		if instant {
+			return mapz, nil
+		}
+
+		fileData := tgbotapi.FileBytes{Name: "map.png", Bytes: bts}
+
+		photoMsg, err := r.telegram.Send(ctx, tgbotapi.NewPhoto(msg.Chat.ID, fileData))
+		if err != nil {
+			return nil, fmt.Errorf("telegram send: %w", err)
+		}
+
+		if len(photoMsg.Photo) == 0 {
+			return nil, errors.New("no photos in response")
+		}
+
+		sort.Slice(photoMsg.Photo, func(i, j int) bool { return photoMsg.Photo[i].FileSize > photoMsg.Photo[j].FileSize })
+
+		if _, err := r.mapz.Save(ctx, alerts, photoMsg.Photo[0].FileID); err != nil {
+			return nil, fmt.Errorf("mapz save: %w", err)
+		}
+
+		return nil, nil
+	})
+
 	if err != nil {
-		return tgbotapi.MessageConfig{}, fmt.Errorf("telegram send: %w", err)
+		return tgbotapi.MessageConfig{}, fmt.Errorf("singleflight shared %t: %w", shared, err)
 	}
 
-	if len(photoMsg.Photo) == 0 {
-		return tgbotapi.MessageConfig{}, errors.New("no photos in response")
-	}
-
-	sort.Slice(photoMsg.Photo, func(i, j int) bool { return photoMsg.Photo[i].FileSize > photoMsg.Photo[j].FileSize })
-
-	if _, err := r.mapz.Save(ctx, alerts, photoMsg.Photo[0].FileID); err != nil {
-		return tgbotapi.MessageConfig{}, fmt.Errorf("mapz save: %w", err)
+	if mapz, ok = val.(types2.Map); ok {
+		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
 
 	return tgbotapi.NewMessage(msg.Chat.ID, ""), nil
