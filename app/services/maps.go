@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -23,12 +24,10 @@ type Maps struct {
 func NewMaps(
 	log *zap.SugaredLogger,
 	mapz repositories.Maps,
-	alert Alerts,
 ) Maps {
 	return Maps{
-		log:   log,
-		mapz:  mapz,
-		alert: alert,
+		log:  log,
+		mapz: mapz,
 	}
 }
 
@@ -56,9 +55,13 @@ func (r Maps) Get(ctx context.Context, alerts types2.Alerts) (bool, types2.Map, 
 		return false, mapz, nil, fmt.Errorf("look path convert: %w", err)
 	}
 
-	bts, err := r.alert.GetMapSVGBytes(ctx)
+	bts, err := os.ReadFile("map.svg")
 	if err != nil {
-		return false, mapz, nil, fmt.Errorf("get map svg bytes: %w", err)
+		return false, mapz, nil, fmt.Errorf("os read file map.svg: %w", err)
+	}
+
+	if bts, err = r.Paint(bts, alerts); err != nil {
+		return false, mapz, nil, fmt.Errorf("paint: %w", err)
 	}
 
 	filenameSVG := filename + ".svg"
@@ -114,4 +117,42 @@ func (r Maps) Exists(ctx context.Context, alerts types2.Alerts) (types2.Map, boo
 	}
 
 	return mapz, false, fmt.Errorf("mapz get: %w", err)
+}
+
+func (r Maps) Paint(bts []byte, alerts types2.Alerts) ([]byte, error) {
+	if len(alerts) == 0 {
+		return bts, nil
+	}
+
+	for _, alert := range alerts {
+		regex, err := regexp.Compile(`(<[^>]+fill=)"[^"]+"([^>]+data-oblast="` + alert.ID + ")")
+		if err != nil {
+			return nil, fmt.Errorf("regexp compile: %w", err)
+		}
+
+		bts = regex.ReplaceAll(bts, []byte(`$1"rgba(230,25,25,1)"$2`))
+
+		regex, err = regexp.Compile(`(<[^>]+data-oblast="` + alert.ID + `[^>]+fill=)"[^"]+"`)
+		if err != nil {
+			return nil, fmt.Errorf("regexp compile: %w", err)
+		}
+
+		bts = regex.ReplaceAll(bts, []byte(`$1"rgba(230,25,25,1)"`))
+
+		regex, err = regexp.Compile(`(<[^>]+fill-opacity=)"[^"]+"([^>]+data-oblast="` + alert.ID + `)`)
+		if err != nil {
+			return nil, fmt.Errorf("regexp compile: %w", err)
+		}
+
+		bts = regex.ReplaceAll(bts, []byte(`$1"0.4"$2`))
+
+		regex, err = regexp.Compile(`(<[^>]+data-oblast="` + alert.ID + `[^>]+fill-opacity=)"[^"]+"`)
+		if err != nil {
+			return nil, fmt.Errorf("regexp compile: %w", err)
+		}
+
+		bts = regex.ReplaceAll(bts, []byte(`$1"0.4"`))
+	}
+
+	return bts, nil
 }
