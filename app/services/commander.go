@@ -381,6 +381,14 @@ loop:
 		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
 
+	if cf, ok := val.(chatFile); ok {
+		r.log.Debugw("got chatfile", "chatfile", cf)
+
+		if msg.Chat.ID != cf.ChatID {
+			return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(cf.FileID)), nil
+		}
+	}
+
 	return tgbotapi.MessageConfig{}, nil
 }
 
@@ -418,6 +426,11 @@ func (r Commander) getMapLong(ctx context.Context, chatID int64, alerts types2.A
 
 		r.log.Debugw("singleflight saved map", "chat_id", chatID, "areas", alerts.Areas())
 
-		return nil, nil
+		return chatFile{ChatID: chatID, FileID: photoMsg.Photo[0].FileID}, nil
 	}
+}
+
+type chatFile struct {
+	ChatID int64  `json:"chat_id"`
+	FileID string `json:"file_id"`
 }

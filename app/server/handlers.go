@@ -22,7 +22,9 @@ func RegisterListeningWebhooks(lc fx.Lifecycle, config types.Config, upd handler
 						return
 
 					case update := <-config.Updates:
-						upd.Handle(ctx, update)
+						go func() {
+							upd.Handle(ctx, update)
+						}()
 					}
 				}
 			}()
