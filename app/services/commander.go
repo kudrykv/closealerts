@@ -340,8 +340,22 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
 
-	val, err, shared := r.sf.Do(alerts.Areas().Sort().Join(","), func() (interface{}, error) {
-		r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
+	val, err, shared := r.sf.Do(alerts.Areas().Sort().Join(","), r.getMapLong(ctx, msg.Chat.ID, alerts))
+
+	if err != nil {
+		return tgbotapi.MessageConfig{}, fmt.Errorf("singleflight shared %t: %w", shared, err)
+	}
+
+	if mapz, ok = val.(types2.Map); ok {
+		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
+	}
+
+	return tgbotapi.MessageConfig{}, nil
+}
+
+func (r Commander) getMapLong(ctx context.Context, chatID int64, alerts types2.Alerts) func() (interface{}, error) {
+	return func() (interface{}, error) {
+		r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(chatID, "upload_photo"))
 
 		instant, mapz, bts, err := r.mapz.Get(ctx, alerts)
 		if err != nil {
@@ -354,7 +368,7 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 
 		fileData := tgbotapi.FileBytes{Name: "map.png", Bytes: bts}
 
-		photoMsg, err := r.telegram.Send(ctx, tgbotapi.NewPhoto(msg.Chat.ID, fileData))
+		photoMsg, err := r.telegram.Send(ctx, tgbotapi.NewPhoto(chatID, fileData))
 		if err != nil {
 			return nil, fmt.Errorf("telegram send: %w", err)
 		}
@@ -370,15 +384,5 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 		}
 
 		return nil, nil
-	})
-
-	if err != nil {
-		return tgbotapi.MessageConfig{}, fmt.Errorf("singleflight shared %t: %w", shared, err)
 	}
-
-	if mapz, ok = val.(types2.Map); ok {
-		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
-	}
-
-	return tgbotapi.MessageConfig{}, nil
 }
