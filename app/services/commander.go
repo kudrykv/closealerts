@@ -351,6 +351,7 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 	go func() {
 		val, err, shared = r.sf.Do(alerts.Areas().Sort().Join(","), r.getMapLong(ctx, msg.Chat.ID, alerts))
 		close(done)
+		ticker.Stop()
 	}()
 
 	r.telegram.MaybeSend(ctx, tgbotapi.NewChatAction(msg.Chat.ID, "upload_photo"))
@@ -359,7 +360,6 @@ loop:
 	for {
 		select {
 		case <-done:
-			ticker.Stop()
 			break loop
 
 		case <-ticker.C:
