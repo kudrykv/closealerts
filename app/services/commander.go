@@ -380,5 +380,5 @@ func (r Commander) Map(ctx context.Context, msg *tgbotapi.Message, _ string) (tg
 		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
 
-	return tgbotapi.NewMessage(msg.Chat.ID, ""), nil
+	return tgbotapi.MessageConfig{}, nil
 }

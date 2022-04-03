@@ -125,7 +125,10 @@ func (r UpdateHandler) handleMessage(ctx context.Context, msg *tgbotapi.Message)
 		r.log.Errorw(command, "err", err)
 		r.bot.MaybeSendText(ctx, chat.ID, "в мене щось пішло не так, спробуй ще раз")
 	} else {
-		r.bot.MaybeSend(ctx, chattable)
+		// skip sending message if message text is empty
+		if msgConfig, ok := chattable.(tgbotapi.MessageConfig); !ok || len(msgConfig.Text) > 0 {
+			r.bot.MaybeSend(ctx, chattable)
+		}
 	}
 
 	if clearCmd {
