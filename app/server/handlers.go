@@ -22,8 +22,12 @@ func RegisterListeningWebhooks(lc fx.Lifecycle, config types.Config, upd handler
 						return
 
 					case update := <-config.Updates:
+						sem := make(chan struct{}, 20)
+
 						go func() {
+							sem <- struct{}{}
 							upd.Handle(ctx, update)
+							<-sem
 						}()
 					}
 				}
