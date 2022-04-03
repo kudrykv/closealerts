@@ -109,10 +109,14 @@ func (r Maps) Exists(ctx context.Context, alerts types2.Alerts) (types2.Map, boo
 
 	mapz, err := r.mapz.Get(ctx, alertsKey)
 	if err == nil {
+		r.log.Debugw("map existence", "exists", true)
+
 		return mapz, true, nil
 	}
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
+		r.log.Debugw("map existence", "exists", false)
+
 		return mapz, false, nil
 	}
 

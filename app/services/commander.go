@@ -14,6 +14,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -25,9 +26,11 @@ type Commander struct {
 	telegram     clients.Telegram
 	mapz         Maps
 	sf           *singleflight.Group
+	log          *zap.SugaredLogger
 }
 
 func NewCommander(
+	log *zap.SugaredLogger,
 	tg clients.Telegram,
 	chat Chats,
 	notification Notification,
@@ -36,6 +39,7 @@ func NewCommander(
 	mapz Maps,
 ) Commander {
 	return Commander{
+		log:          log,
 		telegram:     tg,
 		chat:         chat,
 		notification: notification,
@@ -371,6 +375,8 @@ loop:
 		return tgbotapi.MessageConfig{}, fmt.Errorf("singleflight shared %t: %w", shared, err)
 	}
 
+	r.log.Debugw("got map from singleflight", "shared", shared, "chat_id", msg.Chat.ID)
+
 	if mapz, ok = val.(types2.Map); ok {
 		return tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileID(mapz.FileID)), nil
 	}
@@ -380,12 +386,16 @@ loop:
 
 func (r Commander) getMapLong(ctx context.Context, chatID int64, alerts types2.Alerts) func() (interface{}, error) {
 	return func() (interface{}, error) {
+		r.log.Debugw("singleflight get map", "chat_id", chatID, "areas", alerts.Areas())
+
 		instant, mapz, bts, err := r.mapz.Get(ctx, alerts)
 		if err != nil {
 			return nil, fmt.Errorf("get map: %w", err)
 		}
 
 		if instant {
+			r.log.Debugw("singleflight instant map", "chat_id", chatID, "areas", alerts.Areas())
+
 			return mapz, nil
 		}
 
@@ -405,6 +415,8 @@ func (r Commander) getMapLong(ctx context.Context, chatID int64, alerts types2.A
 		if _, err := r.mapz.Save(ctx, alerts, photoMsg.Photo[0].FileID); err != nil {
 			return nil, fmt.Errorf("mapz save: %w", err)
 		}
+
+		r.log.Debugw("singleflight saved map", "chat_id", chatID, "areas", alerts.Areas())
 
 		return nil, nil
 	}
