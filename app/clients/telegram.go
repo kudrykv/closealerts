@@ -64,18 +64,13 @@ func RegisterTelegramCommands(log *zap.SugaredLogger, bot Telegram) error {
 		},
 
 		tgbotapi.BotCommand{
-			Command:     "track",
-			Description: "Створити сповіщення на конкретну територію. Назва має збігатись з назвою в карті",
+			Command:     "map",
+			Description: "Показати тривоги на мапі",
 		},
 
 		tgbotapi.BotCommand{
 			Command:     "tracking",
 			Description: "Список відслідковуваних місць",
-		},
-
-		tgbotapi.BotCommand{
-			Command:     "stop",
-			Description: "Відписатись від відслідковуваного місця",
 		},
 	)
 
