@@ -133,10 +133,10 @@ func (r Maps) Paint(bts []byte, alerts types2.Alerts) ([]byte, error) {
 			expr    string
 			replace string
 		}{
-			{expr: `(<[^>]+fill=)"[^"]+"([^>]+data-oblast="` + alert.ID + ")", replace: `$1"rgba(230,25,25,1)"$2`},
-			{expr: `(<[^>]+data-oblast="` + alert.ID + `[^>]+fill=)"[^"]+"`, replace: `$1"rgba(230,25,25,1)"`},
-			{expr: `(<[^>]+fill-opacity=)"[^"]+"([^>]+data-oblast="` + alert.ID + `)`, replace: `$1"0.4"$2`},
-			{expr: `(<[^>]+data-oblast="` + alert.ID + `[^>]+fill-opacity=)"[^"]+"`, replace: `$1"0.4"`},
+			{expr: `(<[^>]+fill=)"[^"]+"([^>]+="` + alert.ID + ")", replace: `$1"rgba(230,25,25,1)"$2`},
+			{expr: `(<[^>]+="` + alert.ID + `[^>]+fill=)"[^"]+"`, replace: `$1"rgba(230,25,25,1)"`},
+			{expr: `(<[^>]+fill-opacity=)"[^"]+"([^>]+="` + alert.ID + `)`, replace: `$1"0.4"$2`},
+			{expr: `(<[^>]+="` + alert.ID + `[^>]+fill-opacity=)"[^"]+"`, replace: `$1"0.4"`},
 		}
 
 		for _, row := range table {
