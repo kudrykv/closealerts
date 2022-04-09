@@ -39,3 +39,21 @@ func (r Stringies) Sort() Stringies {
 
 	return cp
 }
+
+func (r Stringies) PrependIfContains(match, prepend string) string {
+	if r.Contains(match) {
+		return prepend + match
+	}
+
+	return match
+}
+
+func (r Stringies) Contains(match string) bool {
+	for _, s := range r {
+		if s == match {
+			return true
+		}
+	}
+
+	return false
+}
