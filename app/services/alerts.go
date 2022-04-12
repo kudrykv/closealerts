@@ -88,7 +88,7 @@ func (r Alerts) ukrzen(ctx context.Context) (types2.Alerts, error) {
 		err  error
 	)
 
-	if err = mkReqUnmarshal(ctx, "https://war-api.ukrzen.in.ua/alerts/api/v2/alerts/active.json", &resp); err != nil {
+	if err = mkReqUnmarshal(ctx, "https://api.alerts.in.ua/v2/alerts/active.json", &resp); err != nil {
 		return nil, fmt.Errorf("mk req: %w", err)
 	}
 
