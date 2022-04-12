@@ -122,7 +122,7 @@ func (r Commander) Start(_ context.Context, msg *tgbotapi.Message, _ string) (tg
 І далі наклацати області, які цікавлять.
 
 Дані беруться з карт:
-- https://war.ukrzen.in.ua/alerts/
+- https://alerts.in.ua/
 - https://vadimklimenko.com/map/
 - https://alarmmap.online/
 `,
