@@ -49,13 +49,8 @@ func RegisterTelegram(lc fx.Lifecycle, config types.Config, bot Telegram) {
 func RegisterTelegramCommands(log *zap.SugaredLogger, bot Telegram) error {
 	commands := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{
-			Command:     "start",
-			Description: "Коротко про те, як працює бот.",
-		},
-
-		tgbotapi.BotCommand{
-			Command:     "areas",
-			Description: "Список відслідковуваних областей, разом з налаштуванням",
+			Command:     "map",
+			Description: "Показати тривоги на мапі",
 		},
 
 		tgbotapi.BotCommand{
@@ -64,13 +59,13 @@ func RegisterTelegramCommands(log *zap.SugaredLogger, bot Telegram) error {
 		},
 
 		tgbotapi.BotCommand{
-			Command:     "map",
-			Description: "Показати тривоги на мапі",
+			Command:     "areas",
+			Description: "Список відслідковуваних областей, разом з налаштуванням",
 		},
 
 		tgbotapi.BotCommand{
-			Command:     "tracking",
-			Description: "Список відслідковуваних місць",
+			Command:     "start",
+			Description: "Коротко про те, як працює бот.",
 		},
 	)
 
