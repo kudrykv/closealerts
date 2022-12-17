@@ -112,7 +112,9 @@ func (r Alerts) ukrzen(ctx context.Context) (types2.Alerts, error) {
 		err  error
 	)
 
-	if err = mkReqUnmarshal(ctx, "https://api.alerts.in.ua/v2/alerts/active.json", &resp); err != nil {
+	apiKey := os.Getenv("UKRZEN_API_KEY")
+
+	if err = mkReqUnmarshal(ctx, "https://api.alerts.in.ua/v2/alerts/active.json?token="+apiKey, &resp); err != nil {
 		return nil, fmt.Errorf("mk req: %w", err)
 	}
 
