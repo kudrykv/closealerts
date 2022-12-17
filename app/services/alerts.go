@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -71,6 +73,28 @@ func (r Alerts) GetActive(ctx context.Context) (types2.Alerts, error) {
 	}
 
 	return list, nil
+}
+
+type Ukrzen2Response struct {
+	Alerts Ukrzen2Alert `json:"alerts"`
+}
+
+type Ukrzen2Alerts []Ukrzen2Alert
+
+type Ukrzen2Alert struct {
+	ID             int64     `json:"id"`
+	LocationTitle  string    `json:"location_title"`
+	LocationType   string    `json:"location_type"`
+	LocationOblast string    `json:"location_oblast"`
+	LocationRaion  string    `json:"location_raion"`
+	AlertType      string    `json:"alert_type"`
+	StartedAt      time.Time `json:"started_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	FinishedAt     time.Time `json:"finished_at"`
+}
+
+func (r Alerts) ukrzen2(ctx context.Context) (types2.Alerts, error) {
+	panic("not implemented")
 }
 
 type Alert struct {
