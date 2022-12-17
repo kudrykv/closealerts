@@ -93,7 +93,7 @@ type Ukrzen2Alert struct {
 	FinishedAt     time.Time `json:"finished_at"`
 }
 
-func (r Alerts) ukrzen2(ctx context.Context) (types2.Alerts, error) {
+func (r Alerts) ukrzen2(_ context.Context) (types2.Alerts, error) {
 	panic("not implemented")
 }
 
