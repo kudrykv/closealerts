@@ -219,9 +219,9 @@ func areasKeyboard(tracking types.Stringies) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(tracking.PrependIfContains("Хмельницька", "✅"), "toggle_area:Хмельницька"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Черкаська", "toggle_area:Черкаська"),
-			tgbotapi.NewInlineKeyboardButtonData("Чернівецька", "toggle_area:Чернівецька"),
-			tgbotapi.NewInlineKeyboardButtonData("Чернігівська", "toggle_area:Чернігівська"),
+			tgbotapi.NewInlineKeyboardButtonData(tracking.PrependIfContains("Черкаська", "✅"), "toggle_area:Черкаська"),
+			tgbotapi.NewInlineKeyboardButtonData(tracking.PrependIfContains("Чернівецька", "✅"), "toggle_area:Чернівецька"),
+			tgbotapi.NewInlineKeyboardButtonData(tracking.PrependIfContains("Чернігівська", "✅"), "toggle_area:Чернігівська"),
 		),
 	)
 }
