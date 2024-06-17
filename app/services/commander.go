@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -267,7 +268,7 @@ func (r Commander) Auth(ctx context.Context, msg *tgbotapi.Message, args string)
 	}
 
 	priv, passwd := split[0], split[1]
-	if passwd != "passwd" {
+	if passwd != os.Getenv("SOME_ADMIN_PASSWD") {
 		return tgbotapi.NewMessage(msg.Chat.ID, "nopes"), nil
 	}
 
